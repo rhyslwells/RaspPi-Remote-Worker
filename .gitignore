@@ -1,0 +1,17 @@
+credentials.json
+.venv
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+.env.local
+.history/
+*.log
+.idea/
+.DS_Store
