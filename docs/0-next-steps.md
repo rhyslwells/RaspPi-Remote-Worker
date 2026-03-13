@@ -19,8 +19,6 @@ Config Class
    - Part of the class should be to log the the status's like in scripts\test_connection.py to the Log sheet. So that this tracks any scripts that get run. 
    - We will need a readme file in C:\Users\RhysL\Desktop\RaspPi-Remote-Worker\docs\scripts to be generated.
 
----
-We will need to update README.md with respect to \docs folder content.
 
 ---
 

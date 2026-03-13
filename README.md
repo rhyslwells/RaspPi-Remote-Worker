@@ -1,84 +1,96 @@
-this need to be rewritten the current project focus, use below as a template.
-
-# Chess Game Analysis Dashboard
-
-<!-- <p align="center">
-  <img src="./demo.gif" alt="Dashboard Demo GIF" width="600">
-</p> -->
+# RaspPi Remote Worker
 
 ## Overview
 
-**Chess Game Analysis Dashboard** is a Streamlit-based analytical application for examining historical chess games from Chess.com. It provides an on-demand environment for retrieving game data, computing derived performance metrics, and exploring historical patterns through an interactive interface.
+**RaspPi Remote Worker** is a Raspberry Pi-based task execution system that enables remote, scheduled, and on-demand task management through a simple Google Sheets control panel.
 
-The application accepts **any Chess.com username**, retrieves publicly available games, and performs all analysis locally. No API keys, background services, or continuous updates are required.
+The system uses a classic "Remote Worker" architecture: a persistent service runs on a Raspberry Pi, polling a Google Sheet for task commands, executing local Python scripts, and reporting execution status back to the sheet. No complex web UI or SSH access needed—just update a spreadsheet cell to trigger tasks.
 
-**[Live Application](https://chess-analysis.streamlit.app/)**
+**Control Panel:** [Google Sheets Dashboard](https://docs.google.com/spreadsheets/d/1d9QU9st_j2gY4Qp7gkhNu5PB016w58sfkjGkW4JydD8/edit?gid=0#gid=0)
 
 ## Documentation
 
-Extended documentation, including design intent and analytical scope, is available in the `docs/` directory:
+Complete setup and implementation guides are in the `docs/` folder:
 
-* [`project-overview.md`](./docs/project-overview.md)
+* [Project Overview](./docs/0-project-overview.md) — Architecture and system design
+* [Phase 1: Environment Setup](./docs/phase-1-environment-setup.md) — Google Cloud API, repository setup
+* [Phase 2: Runner Logic](./docs/phase-2-runner-logic.md) — Core polling loop and systemd service
+* [Phase 3: Implementation Ideas](./docs/phase-3-implementation-ideas.md) — Example scripts to get started
 
-## Features
+## System Components
 
-### Game Ingestion
+### 1. The Controller (Google Sheets)
+A spreadsheet with columns for `Script Name` and `Status`, acting as a centralized control panel.
 
-* On-demand retrieval of historical games from the Chess.com public API
-* Optional date range filtering
-* Incremental ingestion with local persistence
+### 2. The Worker (Raspberry Pi)
+A systemd service running a Python loop that:
+* Polls the Google Sheet API for task commands
+* Detects "START" flags and executes corresponding scripts
+* Logs execution and updates status back to the sheet
+* Ensures persistence across reboots
 
-### Analytical Capabilities
+### 3. The Scripts (`/scripts` folder)
+Modular Python scripts that perform specific tasks. Examples included to get you started.
 
-* Performance summaries and win-rate metrics
-* Rating progression and temporal trends
-* Opponent strength segmentation
-* Opening-level outcome analysis
-* Time control and colour-based performance views
+## Project Structure
 
-### Predictive Modelling
+```
+/
+├── runner.py                # Main polling and execution loop
+├── pyproject.toml          # Python dependencies (gspread, oauth2client)
+├── credentials.json        # ⚠️ Service account credentials (NEVER commit)
+├── .gitignore             # Excludes credentials.json
+├── /scripts/              # Task script modules
+├── /docs/                 # Complete documentation
+└── /logs/                 # Service logs (generated at runtime)
+```
 
-* Lightweight logistic regression model
-* Win probability estimates based on rating difference and colour
-* Intended for intuition and comparison
+## How It Works
 
-### Interface
+1. **Setup:** Google Cloud credentials and Raspberry Pi environment configured
+2. **Service:** Systemd service starts on Pi boot, beginning the polling loop
+3. **Command:** User updates a cell in the Google Sheet to "START"
+4. **Execution:** Worker detects the command, runs the corresponding script from `/scripts`
+5. **Feedback:** Execution log and status ("SUCCESS" or "FAILED") written back to the sheet
 
-* Streamlit-based interactive dashboard
-* Plotly visualisations
-* Structured separation of data ingestion, analysis, and exploration
+## Control Panel Status Reference
 
-## Limitations
-
-* Manual data retrieval only
-* Dependent on Chess.com public data availability and rate limits
+| Status | Meaning |
+|--------|---------|
+| `IDLE` | Ready to execute (default) |
+| `START` | Trigger script execution |
+| `RUNNING` | Script currently executing |
+| `SUCCESS` | Last execution completed successfully |
+| `FAILED` | Last execution encountered an error |
 
 ## Getting Started
 
 ### Prerequisites
 
+* Raspberry Pi (any model) with Raspberry Pi OS
 * Python 3.10+
-* Internet access to Chess.com public endpoints
+* Google Cloud project with service account credentials
+* Internet access (both Pi and primary machine)
 
-### Installation (using uv)
+### Installation
 
-```bash
-pip install uv
-uv sync
-uv run streamlit run app.py
-```
+See [Phase 1: Environment Setup](./docs/phase-1-environment-setup.md) for detailed instructions on:
+* Setting up Google Cloud API credentials
+* Configuring the Raspberry Pi
+* Installing dependencies using `uv`
 
-## API Information
+## Features
 
-This project uses the **Chess.com Published Data API**:
-
-* Public access, no authentication required
-* Subject to Chess.com rate limiting policies
-* Documentation: [https://www.chess.com/news/view/published-data-api](https://www.chess.com/news/view/published-data-api)
+* **On-demand execution** — Trigger tasks anytime from the Google Sheet
+* **Persistent service** — Automatic restart on Pi reboot via systemd
+* **Simple control** — No SSH or complex CLI needed; update a spreadsheet cell
+* **Modular scripts** — Easy to write and add your own task scripts
+* **Execution logging** — Full logs stored locally and status tracked in the sheet
+* **Multi-tasking ready** — Architecture supports future multiprocessing expansion
 
 ## Contributing
 
-Contributions are welcome via issues or pull requests. Please keep changes aligned with the existing structure and intent.
+Contributions are welcome via issues or pull requests. Keep changes aligned with the modular architecture and documentation standards.
 
 ## License
 
