@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Prime Hunter Script
-
+Finds prime numbers starting from a range defined in the Config sheet and logs results.
 
 Parameters (from Google Sheet Config):
 - Parameter-1: Starting integer (inclusive)
@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from utils.control_panel import ControlPanel, ScriptStatus
+from utils.control_panel import ControlPanel
 
 
 def find_primes(start: int, end: int) -> list:
@@ -39,44 +39,39 @@ def find_primes(start: int, end: int) -> list:
 
 
 def main():
-    # Initialize Control Panel
-    panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
+    """
+    Main entry point for Prime Hunter.
     
-    # Read parameters from Config sheet
-    params = panel.get_script_parameters_list("prime_hunter")
-    
-    # Set defaults if parameters are missing
-    start = int(params[0]) if len(params) > 0 else 100
-    end = int(params[1]) if len(params) > 1 else 200
-    
-    # Define the actual script logic
-    def execution_func():
-        try:
-            # Find primes in the specified range
-            primes = find_primes(start, end)
-            
-            message = f"Found {len(primes)} primes between {start} and {end}"
-            
-            # Format details: show first 5 primes and last 5 primes if there are many
-            if len(primes) <= 10:
-                details = f"Primes: {primes}"
-            else:
-                first_five = primes[:5]
-                last_five = primes[-5:]
-                details = f"First 5: {first_five} ... Last 5: {last_five} (Total: {len(primes)})"
-            
-            return (True, message, details)
-        except Exception as e:
-            return (False, "Error finding primes", str(e))
-    
-    # Execute with full lifecycle management
-    success = panel.execute_script_lifecycle(
-        script_name="prime_hunter",
-        execution_func=execution_func
-    )
-    
-    return 0 if success else 1
+    Returns:
+        Tuple of (success: bool, message: str, details: str)
+    """
+    try:
+        # Initialize Control Panel to read parameters
+        panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
+        
+        # Read parameters from Config sheet
+        params = panel.get_script_parameters_list("prime_hunter.py")
+        
+        # Get parameters - both are required
+        if len(params) < 2:
+            return (False, "Missing parameters", f"Expected 2 parameters, got {len(params)}: {params}")
+        
+        start = int(params[0])
+        end = int(params[1])
+        
+        # Find primes in the specified range
+        primes = find_primes(start, end)
+        
+        message = f"Found {len(primes)} primes between {start} and {end}"
+        
+        # Record all primes in details
+        details = f"Primes: {primes}"
+        
+        return (True, message, details)
+        
+    except Exception as e:
+        return (False, "Error finding primes", str(e))
 
 
 if __name__ == "__main__":
-    exit(main())
+    main()

@@ -429,7 +429,7 @@ class ControlPanel:
             # Extract all Parameter-X columns
             parameters = {}
             for key, value in script_record.items():
-                if key.startswith("Parameter-") and value:  # Only include non-empty parameters
+                if key.startswith("Parameter-") and value is not None and str(value).strip():  # Only include non-empty parameters
                     parameters[key] = str(value).strip()
             
             if parameters:
