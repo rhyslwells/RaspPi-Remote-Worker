@@ -21,7 +21,7 @@ This class eliminates the need for individual scripts to handle their own Google
 The Control Panel expects your spreadsheet to have two sheets:
 
 #### **Config Sheet**
-Contains script definitions and current status.
+Contains script definitions, current status, and runtime parameters.
 
 | Column | Name | Purpose |
 |--------|------|---------|
@@ -30,14 +30,21 @@ Contains script definitions and current status.
 | C | Last Used | Timestamp of last status change |
 | D | Details | Additional information or error messages |
 | E | Priority | Execution priority (1-10) |
+| F+ | Parameter-1, Parameter-2, ... | Script-specific input parameters (dynamic, extensible) |
 
 **Example:**
 ```
-Script Name       | Status  | Last Used           | Details         | Priority
-test_connection   | IDLE    | 2025-03-13 10:30:00 | Ready           | 5
-prime_hunter      | START   | 2025-03-13 10:29:00 | Queued          | 3
-pulse_monitor     | SUCCESS | 2025-03-13 10:15:00 | Completed       | 5
+Script Name       | Status  | Last Used           | Details         | Priority | Parameter-1 | Parameter-2
+test_connection   | IDLE    | 2025-03-13 10:30:00 | Ready           | 5        |             |
+prime_hunter      | START   | 2025-03-13 10:29:00 | Queued          | 3        | 100         | 200
+pulse_monitor     | SUCCESS | 2025-03-13 10:15:00 | Completed       | 5        |             |
 ```
+
+**Parameter Columns:**
+- You can add as many `Parameter-X` columns as needed
+- Parameter naming should follow the pattern `Parameter-1`, `Parameter-2`, `Parameter-3`, etc.
+- Parameters are optional and can be left empty for scripts that don't need them
+- The Control Panel automatically discovers and reads all Parameter-X columns
 
 #### **Log Sheet**
 Complete execution history for auditing and debugging.
@@ -219,6 +226,41 @@ for script_name in scripts_to_run:
     )
 ```
 
+### Get Script Parameters
+
+Retrieve parameters for a specific script:
+
+```python
+# Get parameters as a dictionary
+params = panel.get_script_parameters("prime_hunter")
+# Returns: {'Parameter-1': '100', 'Parameter-2': '200'}
+
+# Get parameters as an ordered list
+params_list = panel.get_script_parameters_list("prime_hunter")
+# Returns: ['100', '200']
+
+# Get all available parameter column headers
+headers = panel.get_parameter_headers()
+# Returns: ['Parameter-1', 'Parameter-2', 'Parameter-3']
+```
+
+**Flexible Parameter Support:**
+- The Control Panel automatically discovers all `Parameter-X` columns
+- You can add new parameter columns to the Config sheet without modifying code
+- Parameters are retrieved in sorted order (Parameter-1, Parameter-2, etc.)
+- Empty parameter cells are skipped
+
+**Example usage in a script:**
+```python
+def execution_func():
+    params = panel.get_script_parameters("my_script")
+    start = int(params.get('Parameter-1', 0))
+    end = int(params.get('Parameter-2', 100))
+    
+    result = process_range(start, end)
+    return (True, "Processing complete", f"Processed {result} items")
+```
+
 ### Add New Script to Config
 
 Programmatically register a new script:
@@ -246,113 +288,6 @@ Reset all scripts to IDLE (useful for system recovery):
 
 ```python
 panel.reset_all_to_idle()
-```
-
----
-
-## Real-World Example
-
-Here's an example script using Control Panel:
-
-```python
-#!/usr/bin/env python3
-"""
-Prime Hunter Script
-Finds prime numbers and logs results.
-"""
-
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent))
-
-from utils.control_panel import ControlPanel, ScriptStatus
-
-
-def find_primes(start: int, end: int) -> list:
-    """Find all primes between start and end."""
-    primes = []
-    for num in range(max(2, start), end + 1):
-        is_prime = all(num % i != 0 for i in range(2, int(num ** 0.5) + 1))
-        if is_prime:
-            primes.append(num)
-    return primes
-
-
-def main():
-    # Initialize Control Panel
-    panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
-    
-    # Define the actual script logic
-    def execution_func():
-        try:
-            # Your script work
-            primes = find_primes(100, 200)
-            
-            message = f"Found {len(primes)} primes"
-            details = f"Primes: {primes[:5]}..." if len(primes) > 5 else f"Primes: {primes}"
-            
-            return (True, message, details)
-        except Exception as e:
-            return (False, "Error finding primes", str(e))
-    
-    # Execute with full lifecycle management
-    success = panel.execute_script_lifecycle(
-        script_name="prime_hunter",
-        execution_func=execution_func
-    )
-    
-    return 0 if success else 1
-
-
-if __name__ == "__main__":
-    exit(main())
-```
-
----
-
-## Advanced Features
-
-### Custom Logging
-
-Access the Control Panel's logger:
-
-```python
-panel.logger.info("This is an info message")
-panel.logger.error("This is an error message")
-panel.logger.warning("This is a warning")
-```
-
-### Multi-Processing Considerations
-
-For future multi-processing support, keep these principles in mind:
-
-1. **Always use `set_script_status()` or `execute_script_lifecycle()`** - These handle sheet updates atomically
-2. **Status polling interval** - In runner.py, add a small delay between checks
-3. **Lock on config sheet updates** - When implementing multi-process workers, add a lock mechanism
-4. **Log sheet is append-only** - Multiple processes can safely append to the Log sheet simultaneously
-
-Example runner pattern for future multi-processing:
-
-```python
-from concurrent.futures import ThreadPoolExecutor
-import time
-
-panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
-executor = ThreadPoolExecutor(max_workers=4)
-
-while True:
-    scripts_to_run = panel.get_scripts_to_run()
-    
-    for script_name in scripts_to_run:
-        # Submit to thread pool
-        executor.submit(
-            panel.execute_script_lifecycle,
-            script_name=script_name,
-            execution_func=lambda: run_script(script_name)
-        )
-    
-    time.sleep(10)  # Poll every 10 seconds
 ```
 
 ---
@@ -460,6 +395,11 @@ class ControlPanel:
     get_scripts_to_run() -> List[str]
     get_all_scripts() -> List[Dict[str, str]]
     
+    # Parameter operations (dynamic, supports any number of parameters)
+    get_script_parameters(script_name) -> Dict[str, str]
+    get_script_parameters_list(script_name) -> List[str]
+    get_parameter_headers() -> List[str]
+    
     # Write operations
     set_script_status(script_name, status, message="", details="") -> bool
     add_script_to_config(script_name, priority=5) -> bool
@@ -489,15 +429,6 @@ class ScriptStatus(Enum):
 
 ---
 
-## Next Steps
-
-1. **Update existing scripts** - Migrate `prime_hunter.py`, `pulse_monitor.py`, etc. to use Control Panel
-2. **Implement runner.py** - Use Control Panel in the main polling loop (Phase 2)
-3. **Add systemd service** - Configure Control Panel to run on Pi boot
-4. **Monitor & log** - Archive old logs monthly; set up alerts for FAILED status
-
----
-
 ## Questions & Support
 
 For issues or questions:
@@ -505,16 +436,3 @@ For issues or questions:
 2. Review the console output when running scripts
 3. Verify Config sheet contains your script entries
 4. Check that credentials.json has proper permissions
-
-
-## Initial Notes
-
-Config Class
-- for the google sheet actiing as a config 
-   we will need a python class here, that can be imported into respective scripts, so that they know when to run, ect.
-   - Later we will need to consider multi processing.
-   - if a script complete i would like the config sheet status to change respectively. 
-   - Current options are "IDLE", "START", "RUNNING", "SUCCESS", "FAILED"
-   - scripts\test_connection.py will need to be updated with respect to the new class, removing any uncessary code.
-   - Part of the class should be to log the the status's like in scripts\test_connection.py to the Log sheet. So that this tracks any scripts that get run. 
-   - We will need a readme file in C:\Users\RhysL\Desktop\RaspPi-Remote-Worker\docs\scripts to be generated.

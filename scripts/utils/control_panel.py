@@ -392,6 +392,116 @@ class ControlPanel:
             self.logger.error(f"❌ Error retrieving all scripts: {e}")
             return []
     
+    def get_script_parameters(self, script_name: str) -> Dict[str, str]:
+        """
+        Get all parameters for a specific script from the Config sheet.
+        
+        Dynamically reads all columns starting with "Parameter-" and returns them
+        as a dictionary. This allows for flexible parameter addition without 
+        modifying the Control Panel code.
+        
+        Args:
+            script_name: Name of the script
+            
+        Returns:
+            Dictionary of {parameter_name: parameter_value}. Empty dict if script not found
+            or if no parameters are set.
+            
+        Example:
+            >>> params = panel.get_script_parameters("prime_hunter")
+            >>> params
+            {'Parameter-1': '100', 'Parameter-2': '200'}
+        """
+        try:
+            records = self.config_sheet.get_all_records()
+            
+            # Find the script record
+            script_record = None
+            for record in records:
+                if record.get("Script Name") == script_name:
+                    script_record = record
+                    break
+            
+            if not script_record:
+                self.logger.warning(f"Script not found: {script_name}")
+                return {}
+            
+            # Extract all Parameter-X columns
+            parameters = {}
+            for key, value in script_record.items():
+                if key.startswith("Parameter-") and value:  # Only include non-empty parameters
+                    parameters[key] = str(value).strip()
+            
+            if parameters:
+                self.logger.info(f"Retrieved {len(parameters)} parameter(s) for {script_name}")
+            
+            return parameters
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error retrieving parameters for {script_name}: {e}")
+            return {}
+    
+    def get_script_parameters_list(self, script_name: str) -> List[str]:
+        """
+        Get parameters for a script as an ordered list.
+        
+        Returns parameters in sorted order (Parameter-1, Parameter-2, etc.)
+        
+        Args:
+            script_name: Name of the script
+            
+        Returns:
+            Ordered list of parameter values
+            
+        Example:
+            >>> params = panel.get_script_parameters_list("prime_hunter")
+            >>> params
+            ['100', '200']
+        """
+        params_dict = self.get_script_parameters(script_name)
+        
+        # Sort by the numeric suffix of Parameter-X
+        sorted_params = []
+        param_items = [(key, value) for key, value in params_dict.items()]
+        param_items.sort(key=lambda x: int(x[0].split("-")[1]))
+        
+        return [value for key, value in param_items]
+    
+    def get_parameter_headers(self) -> List[str]:
+        """
+        Get all parameter column headers from the Config sheet.
+        
+        Returns all column names that match "Parameter-X" pattern.
+        Useful for understanding what parameters are available.
+        
+        Returns:
+            List of parameter column headers in sorted order
+            
+        Example:
+            >>> headers = panel.get_parameter_headers()
+            >>> headers
+            ['Parameter-1', 'Parameter-2', 'Parameter-3']
+        """
+        try:
+            records = self.config_sheet.get_all_records()
+            if not records:
+                return []
+            
+            # Get all keys from first record
+            all_keys = records[0].keys()
+            
+            # Filter for Parameter-X columns
+            param_headers = [key for key in all_keys if key.startswith("Parameter-")]
+            
+            # Sort by numeric suffix
+            param_headers.sort(key=lambda x: int(x.split("-")[1]))
+            
+            return param_headers
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error retrieving parameter headers: {e}")
+            return []
+    
     def reset_all_to_idle(self) -> bool:
         """
         Reset all scripts in Config sheet to IDLE status.
