@@ -261,9 +261,169 @@ def execution_func():
     return (True, "Processing complete", f"Processed {result} items")
 ```
 
-### Add New Script to Config
+---
 
-Programmatically register a new script:
+## Adding a New Script
+
+To add a new script to the system, follow this three-step process:
+
+### Step 1: Create the Script File
+
+Create a new Python file in the `scripts/` folder with the required structure:
+
+```python
+#!/usr/bin/env python3
+"""
+My Custom Script
+A brief description of what this script does.
+"""
+
+import sys
+from pathlib import Path
+
+# Add parent directory to path to import utils
+sys.path.insert(0, str(Path(__file__).parent))
+
+from utils.control_panel import ControlPanel
+
+
+def main():
+    """
+    Main entry point for your script.
+    
+    Returns:
+        Tuple of (success: bool, message: str, details: str)
+    """
+    try:
+        # Your script logic here
+        result = do_some_work()
+        
+        # Return success tuple
+        return (
+            True,
+            "Script completed successfully",
+            f"Result: {result}"
+        )
+    
+    except Exception as e:
+        # Return failure tuple
+        return (
+            False,
+            "Script encountered an error",
+            str(e)
+        )
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**Key Requirements:**
+- Create file in `scripts/` folder with `.py` extension
+- Include a `main()` function that returns a tuple: `(success: bool, message: str, details: str)`
+- Add path setup to import the Control Panel (see imports above)
+- Add a docstring describing the script
+
+**Optional: Using Script Parameters**
+
+If your script needs parameters from the Config sheet:
+
+```python
+def main():
+    try:
+        # Initialize Control Panel to read parameters
+        panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
+        
+        # Read parameters from Config sheet
+        params = panel.get_script_parameters("my_custom_script.py")
+        
+        # Extract specific parameters
+        param1 = params.get('Parameter-1', 'default_value')
+        param2 = params.get('Parameter-2', 'default_value')
+        
+        # Use parameters in your logic
+        result = process_with_params(param1, param2)
+        
+        return (True, "Processing complete", f"Processed with {param1}, {param2}")
+    
+    except Exception as e:
+        return (False, "Processing failed", str(e))
+```
+
+### Step 2: Add to Config Sheet
+
+Register the script in your Google Sheet's **Config** worksheet:
+
+1. Open your **RaspPI-Remote-Worker** spreadsheet
+2. Go to the **Config** sheet
+3. Add a new row with:
+   - **Script Name**: `my_custom_script.py` (must match the filename)
+   - **Status**: `IDLE`
+   - **Last Used**: Leave blank (auto-updated)
+   - **Details**: Leave blank (auto-updated)
+   - **Priority**: `5` (or your preferred priority)
+   - **Parameters**: Add values for Parameter-1, Parameter-2, etc. (if your script needs them)
+
+**Example Config Sheet Row:**
+```
+Script Name            | Status | Last Used | Details | Priority | Parameter-1 | Parameter-2
+my_custom_script.py    | IDLE   |           |         | 5        | value1      | value2
+```
+
+### Step 3: Test the Script
+
+#### Option A: Test Standalone
+```bash
+cd scripts
+python my_custom_script.py
+```
+
+#### Option B: Trigger via Control Panel
+```python
+from utils.control_panel import ControlPanel
+
+panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
+
+# Manually execute with full lifecycle management
+def my_execution_func():
+    from my_custom_script import main
+    return main()
+
+panel.execute_script_lifecycle(
+    script_name="my_custom_script.py",
+    execution_func=my_execution_func
+)
+```
+
+#### Option C: Trigger via Google Sheet (Automatic)
+1. Open the **Config** sheet
+2. Change your script's Status to `START`
+3. The runner will automatically:
+   - Pick up the START signal
+   - Execute your script's `main()` function
+   - Update status to RUNNING, then SUCCESS or FAILED
+   - Log everything to the Log sheet
+
+### How the Runner Discovers Scripts
+
+The `runner.py` script:
+1. **Polls** the Config sheet continuously
+2. **Finds** all scripts with Status = `START`
+3. **Dynamically imports** each script file from the `scripts/` folder
+4. **Executes** the `main()` function
+5. **Handles** the complete lifecycle (START → RUNNING → SUCCESS/FAILED)
+6. **Logs** all activities to the Log sheet
+
+This happens automatically—you only need to:
+- Add the script file to `scripts/`
+- Add a row to the Config sheet
+- Set Status to START when ready
+
+---
+
+### Add New Script to Config (Programmatic)
+
+You can also register a script programmatically:
 
 ```python
 panel.add_script_to_config(
