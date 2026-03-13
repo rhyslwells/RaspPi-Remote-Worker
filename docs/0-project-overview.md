@@ -45,14 +45,11 @@ Follow these phases in order to set up the complete system:
 
 ```
 /
-├── runner.py              # Main polling and execution loop
-├── requirements.txt       # Python dependencies (gspread, oauth2client)
+├── runner.py              # Main polling and execution loop #TODO
+├── pyproject.toml       # Python dependencies (gspread, oauth2client)
 ├── credentials.json       # ⚠️  Service account credentials (NEVER commit)
 ├── .gitignore            # Excludes credentials.json
 ├── /scripts/             # Script modules to be executed
-│   ├── prime_hunter.py
-│   ├── pulse_monitor.py
-│   └── web_scraper.py
 ├── /docs/                # Documentation
 └── /logs/                # Service logs (generated at runtime)
 ```
@@ -69,20 +66,4 @@ Follow these phases in order to set up the complete system:
 | `SUCCESS`  | Last execution completed successfully |
 | `FAILED`   | Last execution encountered an error |
 
----
-
-## Quick Start Checklist
-
-- [x] Phase 1: Complete Google Cloud setup and generate `credentials.json`
-- [ ] Phase 1: Initialize GitHub repository with proper structure
-- [ ] Phase 2: Install Python dependencies on Raspberry Pi
-- [ ] Phase 2: Create and enable systemd service
-- [ ] Phase 3: Implement first script (Prime Hunter recommended)
-- [ ] Test: Trigger script from Google Sheet and verify execution
-
----
-
-## Getting Started
-
-Begin with **[Phase 1: Environment Setup](./phase-1-environment-setup.md)** to configure your Google Cloud project and gather the necessary credentials.
 
