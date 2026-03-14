@@ -12,10 +12,9 @@ We will put all tasks here: under a respective descriptive header.
 ---
 
 ## Control Panel: Next Steps
-- [ ] **Update existing scripts** - Migrate `prime_hunter.py`, `pulse_monitor.py`, etc. to use Control Panel
-- [ ] **Implement runner.py** - Use Control Panel in the main polling loop (Phase 2)
+- [x] **Update existing scripts** - Migrate `prime_hunter.py`, `pulse_monitor.py`, etc. to use Control Panel
+- [x] **Implement runner.py** - Use Control Panel in the main polling loop (Phase 2)
 - [ ] **Add systemd service** - Configure Control Panel to run on Pi boot
-- [ ] **Monitor & log** - Archive old logs monthly; set up alerts for FAILED status
 - [ ] **Multiprocessing** - Explore using multiprocessing to run multiple scripts concurrently without blocking the main loop.
 
 ---
