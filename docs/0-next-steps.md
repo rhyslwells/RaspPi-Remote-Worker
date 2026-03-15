@@ -1,5 +1,16 @@
 Because we can remote access it i can just copy/past cred and secrets onto the rasppi and store them in a local folder that is gitignored. Then the codebase can reference these files without them being in the repo.
+---
 
+active cooler for rasppi
+buy
+
+---
+remote ssh to rasp pi
+
+here: use 
+Remote shh connect 
+
+will need to get the connection working though.
 ---
 setup folder needs cleaned to remove duplication.
 
