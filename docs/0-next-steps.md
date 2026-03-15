@@ -11,6 +11,16 @@ here: use
 Remote shh connect 
 
 will need to get the connection working though.
+
+docs\setup\rasp-pi.md
+
+Connecting via terminal shh to rasppi is not working, will use raspberry remote connect instead: https://connect.raspberrypi.com/devices
+
+permision is denied: 
+
+use:ssh rhyslwells@192.168.1.215
+
+when using remote connect the system is in Linux.
 ---
 setup folder needs cleaned to remove duplication.
 
@@ -29,9 +39,6 @@ How will I connect to the raspberry pi to set up the repo, and how will I manage
 
 ---
 We will need to understand the documentation for controlpanel and runner.
-
----
-Connecting via terminal shh to rasppi is not working, will use raspberry remote connect instead: https://connect.raspberrypi.com/devices
 
 ---
 Build out these:
