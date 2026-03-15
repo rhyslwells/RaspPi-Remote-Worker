@@ -31,11 +31,14 @@ The Raspberry Pi will run a script (managed by `systemd` to ensure it restarts o
 
 ---
 
-## Documentation & Implementation Phases
+## Documentation
 
-Follow these phases in order to set up the complete system:
+The following organises the documentation for setting up, understanding and managing the system:
 
-- INSERT RELEVANT LINKS TO OTHER DOCS HERE #TODO
+- #TODO: INSERT RELEVANT LINKS TO OTHER DOCS HERE WITH DESCRIPTIONS
+
+Setup
+- docs\setup\completed\environment-setup.md
 
 ---
 
@@ -43,7 +46,7 @@ Follow these phases in order to set up the complete system:
 
 ```
 /
-├── runner.py              # Main polling and execution loop #TODO
+├── runner.py              # Main polling and execution loop
 ├── pyproject.toml       # Python dependencies (gspread, oauth2client)
 ├── credentials.json       # ⚠️  Service account credentials (NEVER commit)
 ├── .gitignore            # Excludes credentials.json
@@ -51,17 +54,5 @@ Follow these phases in order to set up the complete system:
 ├── /docs/                # Documentation
 └── /logs/                # Service logs (generated at runtime)
 ```
-
----
-
-## Control Panel Status Reference
-
-| Status Value | Meaning |
-|-------------|---------|
-| `IDLE`     | Ready to execute (default state) |
-| `START`    | Trigger script execution |
-| `RUNNING`  | Script currently executing |
-| `SUCCESS`  | Last execution completed successfully |
-| `FAILED`   | Last execution encountered an error |
 
 
