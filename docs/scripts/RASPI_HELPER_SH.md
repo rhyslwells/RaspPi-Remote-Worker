@@ -1,30 +1,20 @@
-Explain this script
+## raspi-helper.sh (Bash/WSL)
 
+Bash/WSL helper script for managing your Raspberry Pi remotely without entering your password multiple times. Handles SSH connections, service management, log retrieval, and diagnostics.
 
+### Configuration
 
-### raspi-helper.sh (WSL/Bash)
+The script uses:
+- **PI_USER**: Username for SSH (set to `rhyslwells` by default)
+- **PI_IP**: Stored in `.raspi-config` file (project root)
 
-**What it provides:**
-Same as PowerShell version but for Bash/WSL:
-- SSH connections
-- File transfer
-- Service management
-- Log viewing
-- Repository updates
-- Connection testing
-- Diagnostics
+### Quick Start
 
-**How to use (WSL Terminal):**
-
-**First time:**
+**First time setup:**
 ```bash
 cd ~/RaspPi-Remote-Worker
-
-# Load helper
 source raspi-helper.sh
-
-# Save IP for future
-save_raspi_config 192.168.1.100
+save_raspi_config 192.168.1.215
 ```
 
 **Future sessions:**
@@ -33,41 +23,52 @@ cd ~/RaspPi-Remote-Worker
 source raspi-helper.sh
 ```
 
-**Available commands:**
+The script loads your saved IP automatically and shows which one is configured.
+
+### Available Commands
+
+| Command | Purpose |
+|---------|---------|
+| `connect_raspi` | SSH into the Pi |
+| `copy_credentials_to_raspi credentials.json` | Deploy credentials file |
+| `get_raspi_logs [path]` | Download logs from Pi |
+| `get_raspi_service_status` | Check service status |
+| `start_raspi_service` | Start service & show status (single SSH) |
+| `stop_raspi_service` | Stop service & show status (single SSH) |
+| `restart_raspi_service` | Restart service & show status (single SSH) |
+| `watch_raspi_logs` | View live logs (Ctrl+C to exit) |
+| `update_raspi_repo` | Git pull & restart service |
+| `test_raspi_connection` | Run 5-point diagnostic check |
+| `get_raspi_info` | System info (OS, Python, disk, memory, IP, service) |
+| `save_raspi_config <IP>` | Save Pi IP for future sessions |
+| `show_help` | Show all available commands |
+
+### Example Workflow
+
 ```bash
-connect_raspi                           # SSH into Pi
-copy_credentials_to_raspi              # Deploy credentials.json
-get_raspi_logs [path]                  # Download logs
-get_raspi_service_status               # Check service
-start_raspi_service                    # Start service
-stop_raspi_service                     # Stop service
-restart_raspi_service                  # Restart service
-watch_raspi_logs                       # Live logs (Ctrl+C to exit)
-update_raspi_repo                      # Pull changes & restart
-test_raspi_connection                  # Run diagnostics
-get_raspi_info                         # System info
-save_raspi_config 192.168.1.100       # Save IP permanently
-show_help                              # Show all commands
-```
-
-**Example workflow:**
-```bash
-# Setup
+# Initial setup
 source raspi-helper.sh
-save_raspi_config 192.168.1.100
+save_raspi_config 192.168.1.215
 
-# Connect
-connect_raspi
+# Check everything works
+test_raspi_connection
 
-# In another terminal:
-source raspi-helper.sh
+# Deploy credentials
 copy_credentials_to_raspi credentials.json
 
-# Check and manage
-get_raspi_service_status
-watch_raspi_logs
-update_raspi_repo
-test_raspi_connection
+# Manage service (single password prompt each)
+start_raspi_service
+stop_raspi_service
+restart_raspi_service
+
+# Monitor and update
+watch_raspi_logs        # View live logs
+update_raspi_repo       # Pull latest code
+get_raspi_info          # System details
 ```
 
----
+### Notes
+
+- Service commands (`start/stop/restart`) combine operations into a single SSH call to minimize password prompts
+- Requires key-based SSH authentication or will prompt for password once per command
+- For direct file editing on the Pi, consider VSCode Remote SSH in addition to this script

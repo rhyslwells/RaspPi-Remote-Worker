@@ -40,10 +40,8 @@ fi
 echo -e "${BLUE}This script will:${NC}"
 echo "  1. Update system packages (apt update, apt upgrade)"
 echo "  2. Install Python 3.10+, git, and build tools"
-echo "  3. Install UV (fast package manager)"
-echo "  4. Create virtual environment"
-echo "  5. Install Python dependencies from pyproject.toml"
-echo "  6. Set up systemd service for auto-start"
+echo "  3. Create virtual environment"
+echo "  4. Install UV and Python dependencies"
 echo ""
 echo -e "${YELLOW}You will need to enter your password for sudo commands.${NC}"
 echo ""
@@ -65,83 +63,31 @@ echo ""
 echo -e "${BLUE}Step 2/6: Installing Python, git, and build tools...${NC}"
 sudo apt install -y python3 python3-pip python3-venv python3-dev git build-essential
 
-# Step 3: Install UV
+# Step 3: Create virtual environment
 echo ""
-echo -e "${BLUE}Step 3/6: Installing UV package manager...${NC}"
-pip3 install --upgrade pip
-pip3 install uv
-
-# Step 4: Create virtual environment
-echo ""
-echo -e "${BLUE}Step 4/6: Creating virtual environment...${NC}"
-uv venv .venv
-
-# Step 5: Install dependencies
-echo ""
-echo -e "${BLUE}Step 5/6: Installing Python dependencies...${NC}"
+echo -e "${BLUE}Step 3/6: Creating virtual environment...${NC}"
+python3 -m venv .venv
 source .venv/bin/activate
-uv sync
-deactivate
 
-# Step 6: Set up systemd service
+# Step 4: Install UV and dependencies
 echo ""
-echo -e "${BLUE}Step 6/6: Setting up systemd service...${NC}"
-
-# Create logs directory
-mkdir -p logs
-
-# Create service file
-sudo tee /etc/systemd/system/remote-worker.service > /dev/null <<EOF
-[Unit]
-Description=Remote Worker - Google Sheets Task Runner
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=pi
-WorkingDirectory=/home/pi/RaspPi-Remote-Worker
-Environment="PATH=/home/pi/RaspPi-Remote-Worker/.venv/bin"
-ExecStart=/home/pi/RaspPi-Remote-Worker/.venv/bin/python3 runner.py
-Restart=always
-RestartSec=10
-
-# Log output
-StandardOutput=append:/home/pi/RaspPi-Remote-Worker/logs/service.log
-StandardError=append:/home/pi/RaspPi-Remote-Worker/logs/service.log
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo systemctl daemon-reload
-sudo systemctl enable remote-worker.service
+echo -e "${BLUE}Step 4/6: Installing UV and Python dependencies...${NC}"
+pip install --upgrade pip
+pip install uv
+uv sync
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}Setup Complete!${NC}"
+echo -e "${GREEN}Initial Setup Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 echo -e "${BLUE}Next steps:${NC}"
 echo ""
-echo "1. Deploy credentials:"
+echo "1. Run setup_systemd.sh to set up the systemd service:"
+echo "   bash setup_systemd.sh"
+echo ""
+echo "2. Deploy credentials when ready:"
 echo "   From your main machine, run:"
 echo "   scp credentials.json pi@$(hostname -I | awk '{print $1}'):~/RaspPi-Remote-Worker/"
 echo ""
-echo "2. Verify credentials were copied:"
-echo "   ls -la ~/RaspPi-Remote-Worker/credentials.json"
-echo ""
-echo "3. Start the service:"
-echo "   sudo systemctl start remote-worker.service"
-echo ""
-echo "4. Check status:"
-echo "   sudo systemctl status remote-worker.service"
-echo ""
-echo "5. View logs:"
-echo "   journalctl -u remote-worker.service -f"
-echo ""
-echo -e "${BLUE}For more information, see:${NC}"
-echo "  - docs/scripts/SETUP_QUICKSTART.md (this process)"
-echo "  - docs/scripts/RASP_PI_README.md (detailed reference)"
-echo "  - docs/scripts/SERVICE_README.md (systemd service management)"
 echo ""

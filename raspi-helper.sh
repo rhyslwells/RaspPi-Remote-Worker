@@ -18,7 +18,8 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Load configuration if it exists
-CONFIG_FILE="$(dirname "$0")/.raspi-config"
+CONFIG_FILE="$(dirname "${BASH_SOURCE[0]}")/.raspi-config"
+PI_USER="rhyslwells"
 if [ -f "$CONFIG_FILE" ]; then
     PI_IP=$(cat "$CONFIG_FILE")
     echo -e "${GREEN}Loaded Pi IP from config: $PI_IP${NC}"
@@ -37,7 +38,7 @@ connect_raspi() {
     fi
     
     echo -e "${GREEN}Connecting to Pi at $PI_IP...${NC}"
-    ssh pi@"$PI_IP"
+    ssh $PI_USER@"$PI_IP"
 }
 
 # ============================================================================
@@ -59,7 +60,7 @@ copy_credentials_to_raspi() {
     fi
     
     echo -e "${GREEN}Copying $cred_path to Pi...${NC}"
-    scp "$cred_path" "pi@${PI_IP}:~/RaspPi-Remote-Worker/"
+    scp "$cred_path" "$PI_USER@${PI_IP}:~/RaspPi-Remote-Worker/"
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}Success! Credentials copied.${NC}"
@@ -81,7 +82,7 @@ get_raspi_logs() {
     mkdir -p "$local_path"
     
     echo -e "${GREEN}Downloading logs from Pi...${NC}"
-    scp -r "pi@${PI_IP}:~/RaspPi-Remote-Worker/logs/*" "$local_path/"
+    scp -r "$PI_USER@${PI_IP}:~/RaspPi-Remote-Worker/logs/*" "$local_path/"
     
     echo -e "${GREEN}Logs downloaded to: $local_path${NC}"
 }
@@ -98,7 +99,7 @@ get_raspi_service_status() {
     fi
     
     echo -e "${GREEN}Checking service status on Pi...${NC}"
-    ssh pi@"$PI_IP" "sudo systemctl status remote-worker.service"
+    ssh $PI_USER@"$PI_IP" "sudo systemctl status remote-worker.service"
 }
 
 start_raspi_service() {
@@ -109,10 +110,7 @@ start_raspi_service() {
     fi
     
     echo -e "${GREEN}Starting Remote Worker service on Pi...${NC}"
-    ssh pi@"$PI_IP" "sudo systemctl start remote-worker.service"
-    
-    sleep 2
-    get_raspi_service_status
+    ssh $PI_USER@"$PI_IP" "sudo systemctl start remote-worker.service && sleep 2 && sudo systemctl status remote-worker.service"
 }
 
 stop_raspi_service() {
@@ -123,10 +121,7 @@ stop_raspi_service() {
     fi
     
     echo -e "${GREEN}Stopping Remote Worker service on Pi...${NC}"
-    ssh pi@"$PI_IP" "sudo systemctl stop remote-worker.service"
-    
-    sleep 2
-    get_raspi_service_status
+    ssh $PI_USER@"$PI_IP" "sudo systemctl stop remote-worker.service && sleep 2 && sudo systemctl status remote-worker.service"
 }
 
 restart_raspi_service() {
@@ -137,10 +132,7 @@ restart_raspi_service() {
     fi
     
     echo -e "${GREEN}Restarting Remote Worker service on Pi...${NC}"
-    ssh pi@"$PI_IP" "sudo systemctl restart remote-worker.service"
-    
-    sleep 2
-    get_raspi_service_status
+    ssh $PI_USER@"$PI_IP" "sudo systemctl restart remote-worker.service && sleep 2 && sudo systemctl status remote-worker.service"
 }
 
 watch_raspi_logs() {
@@ -151,7 +143,7 @@ watch_raspi_logs() {
     fi
     
     echo -e "${GREEN}Connecting to live logs (Ctrl+C to exit)...${NC}"
-    ssh pi@"$PI_IP" "sudo journalctl -u remote-worker.service -f"
+    ssh $PI_USER@"$PI_IP" "sudo journalctl -u remote-worker.service -f"
 }
 
 # ============================================================================
@@ -166,7 +158,7 @@ update_raspi_repo() {
     fi
     
     echo -e "${GREEN}Updating repository on Pi...${NC}"
-    ssh pi@"$PI_IP" "cd ~/RaspPi-Remote-Worker && git pull origin main && source .venv/bin/activate && uv sync && sudo systemctl restart remote-worker.service"
+    ssh $PI_USER@"$PI_IP" "cd ~/RaspPi-Remote-Worker && git pull origin main && source .venv/bin/activate && uv sync && sudo systemctl restart remote-worker.service"
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}Update complete! Service restarted.${NC}"
@@ -201,7 +193,7 @@ test_raspi_connection() {
     # SSH connection
     echo ""
     echo -e "${CYAN}2. Testing SSH connection...${NC}"
-    if ssh pi@"$PI_IP" "echo OK" &> /dev/null; then
+    if ssh $PI_USER@"$PI_IP" "echo OK" &> /dev/null; then
         echo -e "   ${GREEN}✓ SSH connection successful${NC}"
     else
         echo -e "   ${RED}✗ SSH connection failed${NC}"
@@ -211,7 +203,7 @@ test_raspi_connection() {
     # Repository
     echo ""
     echo -e "${CYAN}3. Checking repository...${NC}"
-    if ssh pi@"$PI_IP" "test -d ~/RaspPi-Remote-Worker" 2>/dev/null; then
+    if ssh $PI_USER@"$PI_IP" "test -d ~/RaspPi-Remote-Worker" 2>/dev/null; then
         echo -e "   ${GREEN}✓ Repository found${NC}"
     else
         echo -e "   ${RED}✗ Repository not found${NC}"
@@ -221,7 +213,7 @@ test_raspi_connection() {
     # Credentials
     echo ""
     echo -e "${CYAN}4. Checking credentials.json...${NC}"
-    if ssh pi@"$PI_IP" "test -f ~/RaspPi-Remote-Worker/credentials.json" 2>/dev/null; then
+    if ssh $PI_USER@"$PI_IP" "test -f ~/RaspPi-Remote-Worker/credentials.json" 2>/dev/null; then
         echo -e "   ${GREEN}✓ Credentials found${NC}"
     else
         echo -e "   ${RED}✗ Credentials not found (copy with: copy_credentials_to_raspi)${NC}"
@@ -230,7 +222,7 @@ test_raspi_connection() {
     # Service
     echo ""
     echo -e "${CYAN}5. Checking service status...${NC}"
-    if ssh pi@"$PI_IP" "sudo systemctl is-active remote-worker.service" &> /dev/null; then
+    if ssh $PI_USER@"$PI_IP" "sudo systemctl is-active remote-worker.service" &> /dev/null; then
         echo -e "   ${GREEN}✓ Service is running${NC}"
     else
         echo -e "   ${YELLOW}✗ Service is not running${NC}"
@@ -251,7 +243,7 @@ get_raspi_info() {
     echo -e "${GREEN}Getting system info from Pi...${NC}"
     echo ""
     
-    ssh pi@"$PI_IP" << 'EOF'
+    ssh $PI_USER@"$PI_IP" << 'EOF'
 echo "=== SYSTEM INFO ==="
 uname -a
 echo ""
