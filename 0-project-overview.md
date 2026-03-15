@@ -35,11 +35,7 @@ The Raspberry Pi will run a script (managed by `systemd` to ensure it restarts o
 
 Follow these phases in order to set up the complete system:
 
-- **[Phase 1: Environment Setup](./phase-1-environment-setup.md)** - Google Cloud API setup, repository structure, and Pi configuration
-- **[Phase 2: Runner Logic](./scripts/RUNNER_README.md)** - Core polling loop, script execution, and systemd service setup
-  - [Runner.py Documentation](./scripts/RUNNER_README.md) - Complete reference and usage guide
-  - [systemd Service Setup](./scripts/SERVICE_README.md) - Auto-start on Raspberry Pi boot
-- **[Phase 3: Implementation Ideas](./implementation-ideas.md)** - Three example scripts to get started (Prime Hunter, Pulse, Web-to-Sheet)
+- INSERT RELEVANT LINKS TO OTHER DOCS HERE #TODO
 
 ---
 
