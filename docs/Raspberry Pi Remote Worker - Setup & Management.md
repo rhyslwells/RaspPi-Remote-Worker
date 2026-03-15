@@ -22,32 +22,9 @@ Two options are available for connecting to your Raspberry Pi:
 See the [VS Code SSH Setup Guide](./other/VS_CODE_SSH_SETUP.md) for detailed instructions on connecting via SSH and using VS Code's Remote Development features.
 ---
 
-## Initial Setup (Automated)
-
-The fastest way to get started is with the automated one-line setup:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/rhyslwells/RaspPi-Remote-Worker/main/setup.sh | bash -s -- 192.168.1.100
-```
-
-This command handles everything:
-- ✅ Update system packages
-- ✅ Install Python 3.10+ and git
-- ✅ Install UV (package manager)
-- ✅ Clone the repository
-- ✅ Create virtual environment
-- ✅ Install all Python dependencies
-- ✅ Configure systemd service for auto-start
-
-**What is systemd?** It's a Linux system and service manager that enables scripts to run as background services that automatically start on boot. Your Remote Worker will launch whenever the Raspberry Pi powers on.
-
-> **Note:** The script will ask for confirmation and may prompt for your password (for `sudo` commands).
-
----
-
 ## Manual Setup Steps
 
-If you prefer to set up manually or troubleshoot:
+If you prefer to set up manually or the automated setup doesn't work:
 
 ### 1. Clone the Repository
 
@@ -57,23 +34,40 @@ git clone https://github.com/rhyslwells/RaspPi-Remote-Worker.git
 cd RaspPi-Remote-Worker
 ```
 
-### 2. Create and Activate Virtual Environment
+Get the latest code and switch to the main branch:
 
 ```bash
-uv venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+git pull origin main
 ```
 
-### 3. Install Dependencies
+### 2. Run the Setup Script
 
 ```bash
-uv sync
+bash setup.sh
 ```
 
-### 4. Verify Installation
+The script will automatically handle:
+- ✅ Update system packages
+- ✅ Install Python 3.10+, git, and build tools
+- ✅ Install UV (package manager)
+- ✅ Create virtual environment
+- ✅ Install all Python dependencies
+- ✅ Configure systemd service for auto-start
+
+> **Note:** The script will ask for confirmation and may prompt for your password (for `sudo` commands).
+
+### 3. Verify Installation
 
 ```bash
 python3 runner.py --help
+```
+
+If you want to skip the setup script and install manually:
+
+```bash
+uv venv .venv
+source .venv/bin/activate
+uv sync
 ```
 
 ---

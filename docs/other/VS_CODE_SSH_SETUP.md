@@ -31,6 +31,7 @@ Choose your Pi from the list. VS Code will:
 Once connected:
 1. Click **File → Open Folder**
 2. Navigate to `/home/rhyslwells/RaspPi-Remote-Worker`
+   1. /home/rhyslwells/Desktop/RaspPi-Remote-Worker/
 3. Click **OK**
 
 ## Tips

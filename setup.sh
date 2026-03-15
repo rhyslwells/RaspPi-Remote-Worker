@@ -41,10 +41,9 @@ echo -e "${BLUE}This script will:${NC}"
 echo "  1. Update system packages (apt update, apt upgrade)"
 echo "  2. Install Python 3.10+, git, and build tools"
 echo "  3. Install UV (fast package manager)"
-echo "  4. Clone the RaspPi-Remote-Worker repository"
-echo "  5. Create and activate virtual environment"
-echo "  6. Install Python dependencies from pyproject.toml"
-echo "  7. Set up systemd service for auto-start"
+echo "  4. Create virtual environment"
+echo "  5. Install Python dependencies from pyproject.toml"
+echo "  6. Set up systemd service for auto-start"
 echo ""
 echo -e "${YELLOW}You will need to enter your password for sudo commands.${NC}"
 echo ""
@@ -57,49 +56,36 @@ fi
 
 # Step 1: Update system
 echo ""
-echo -e "${BLUE}Step 1/7: Updating system packages...${NC}"
+echo -e "${BLUE}Step 1/6: Updating system packages...${NC}"
 sudo apt update
 sudo apt upgrade -y
 
 # Step 2: Install Python and dependencies
 echo ""
-echo -e "${BLUE}Step 2/7: Installing Python, git, and build tools...${NC}"
+echo -e "${BLUE}Step 2/6: Installing Python, git, and build tools...${NC}"
 sudo apt install -y python3 python3-pip python3-venv python3-dev git build-essential
 
 # Step 3: Install UV
 echo ""
-echo -e "${BLUE}Step 3/7: Installing UV package manager...${NC}"
+echo -e "${BLUE}Step 3/6: Installing UV package manager...${NC}"
 pip3 install --upgrade pip
 pip3 install uv
 
-# Step 4: Clone repository
+# Step 4: Create virtual environment
 echo ""
-echo -e "${BLUE}Step 4/7: Cloning RaspPi-Remote-Worker repository...${NC}"
-cd ~
-if [ -d "RaspPi-Remote-Worker" ]; then
-    echo -e "${YELLOW}Repository already exists. Updating...${NC}"
-    cd RaspPi-Remote-Worker
-    git pull origin main
-else
-    git clone https://github.com/rhyslwells/RaspPi-Remote-Worker.git
-    cd RaspPi-Remote-Worker
-fi
-
-# Step 5: Create virtual environment
-echo ""
-echo -e "${BLUE}Step 5/7: Creating virtual environment...${NC}"
+echo -e "${BLUE}Step 4/6: Creating virtual environment...${NC}"
 uv venv .venv
 
-# Step 6: Install dependencies
+# Step 5: Install dependencies
 echo ""
-echo -e "${BLUE}Step 6/7: Installing Python dependencies...${NC}"
+echo -e "${BLUE}Step 5/6: Installing Python dependencies...${NC}"
 source .venv/bin/activate
 uv sync
 deactivate
 
-# Step 7: Set up systemd service
+# Step 6: Set up systemd service
 echo ""
-echo -e "${BLUE}Step 7/7: Setting up systemd service...${NC}"
+echo -e "${BLUE}Step 6/6: Setting up systemd service...${NC}"
 
 # Create logs directory
 mkdir -p logs
