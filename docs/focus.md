@@ -19,6 +19,7 @@ Two options are available for connecting to your Raspberry Pi:
 
 > **Note:** When using Raspberry Pi Connect, the system runs Linux commands.
 
+See the [VS Code SSH Setup Guide](./other/VS_CODE_SSH_SETUP.md) for detailed instructions on connecting via SSH and using VS Code's Remote Development features.
 ---
 
 ## Initial Setup (Automated)

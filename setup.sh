@@ -49,7 +49,7 @@ echo ""
 echo -e "${YELLOW}You will need to enter your password for sudo commands.${NC}"
 echo ""
 read -p "Proceed? (y/n) " -n 1 -r
-echo
+echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "Setup cancelled."
     exit 1
