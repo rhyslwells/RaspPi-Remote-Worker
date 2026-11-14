@@ -65,6 +65,10 @@ The script's `main()` returned `None`. It must return `(success, message, detail
 
 Not generally: every run needs a `START`. A `Schedule` column is the top proposal in [improvements.md](improvements.md). The exception is `pulse_monitor.py`, which sets up its own systemd timer when `Parameter-1` is a number of minutes ([scripts.md](scripts.md#included-scripts)); it stops with `0` and does not survive a Pi reboot.
 
+### `pulse_monitor.py` keeps adding rows after I set `Parameter-1` to 0
+
+Setting `Parameter-1` to `0` does nothing until you set the row to `START` (the script only reads its parameters when it runs), so set `0`, then `START`. A blank cell takes one extra sample and leaves the schedule running. Read the result's details: it shows what `Parameter-1` was read as and what systemd still has loaded. To check or stop it by hand on the Pi: `systemctl list-timers pulse-monitor.timer`, then `sudo systemctl stop pulse-monitor.timer`.
+
 ### Can two scripts run at once?
 
 No. The runner executes them one at a time, in its own process, with no timeout. A long script delays everything else.

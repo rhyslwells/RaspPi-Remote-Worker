@@ -265,8 +265,24 @@ def _sudo(args: list, timeout: int = 15) -> subprocess.CompletedProcess:
 
 def _stop_timer() -> None:
     """Stop and clear any existing schedule. Errors are ignored (may not exist)."""
-    _sudo([SYSTEMCTL, "stop", f"{TIMER_UNIT}.timer", f"{TIMER_UNIT}.service"])
-    _sudo([SYSTEMCTL, "reset-failed", f"{TIMER_UNIT}.timer", f"{TIMER_UNIT}.service"])
+    # Timer first and on its own: the sample service is usually not loaded between
+    # runs, and an error for it must not be able to affect stopping the timer.
+    for unit in (f"{TIMER_UNIT}.timer", f"{TIMER_UNIT}.service"):
+        _sudo([SYSTEMCTL, "stop", unit])
+    for unit in (f"{TIMER_UNIT}.timer", f"{TIMER_UNIT}.service"):
+        _sudo([SYSTEMCTL, "reset-failed", unit])
+
+
+def _unit_listing() -> str:
+    """What systemd currently has loaded for the schedule, for diagnostics."""
+    try:
+        result = subprocess.run(
+            [SYSTEMCTL, "list-units", "--all", "--no-legend", f"{TIMER_UNIT}*"],
+            capture_output=True, text=True, timeout=10,
+        )
+        return " ".join(result.stdout.split()) or "no pulse-monitor units loaded"
+    except (OSError, subprocess.SubprocessError) as e:
+        return f"could not list units ({type(e).__name__})"
 
 
 def _timer_active() -> bool:
@@ -321,9 +337,10 @@ def stop_schedule() -> tuple:
     was_active = _timer_active()
     _stop_timer()
     if _timer_active():
-        return (False, "Schedule still active", f"{TIMER_UNIT}.timer did not stop")
+        return (False, "Schedule still active",
+                f"{TIMER_UNIT}.timer did not stop. systemd shows: {_unit_listing()}")
     return (True, "Sampling stopped" if was_active else "Sampling was not running",
-            "No background schedule is active now.")
+            f"No background schedule is active now. systemd shows: {_unit_listing()}")
 
 
 # --- Entry points -----------------------------------------------------------
@@ -355,7 +372,16 @@ def main():
                     f"Parameter-3 must be numbers. Got: {params}")
 
         if minutes is None:
-            return take_sample(panel, max_temp, min_free)
+            success, message, details = take_sample(panel, max_temp, min_free)
+            # A blank Parameter-1 is a single sample, never a stop: say so if a
+            # schedule is still running, because "0" is what stops it.
+            if sys.platform.startswith("linux") and _timer_active():
+                details += (
+                    "\nNote: Parameter-1 was blank, so this was one extra sample. A "
+                    f"background schedule is still running ({TIMER_UNIT}.timer); set "
+                    "Parameter-1 to 0 and START to stop it."
+                )
+            return (success, message, details)
 
         if minutes < 0 or minutes > MAX_INTERVAL_MINUTES:
             return (False, "Invalid interval",
@@ -365,8 +391,10 @@ def main():
             return (False, "Not running on Linux", f"Platform is {sys.platform}")
 
         if minutes == 0:
-            return stop_schedule()
-        return start_schedule(minutes, max_temp, min_free)
+            success, message, details = stop_schedule()
+        else:
+            success, message, details = start_schedule(minutes, max_temp, min_free)
+        return (success, message, f"{details}\nParameter-1 was read as {params[0]!r}.")
     except Exception as e:
         return (False, "Error running pulse_monitor", f"{type(e).__name__}: {e}")
 
