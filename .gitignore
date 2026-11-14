@@ -16,6 +16,7 @@ htmlcov/
 data/
 .idea/
 .DS_Store
+debug/
 
 NETWORK_RECONNECTION.md
 secure
