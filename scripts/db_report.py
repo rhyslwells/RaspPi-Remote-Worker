@@ -117,7 +117,15 @@ def main():
         except ValueError:
             return (False, "Invalid row limit", f"Parameter-2 must be an integer, got: {raw_limit!r}")
 
-        return report(script, limit)
+        success, message, details = report(script, limit)
+        if not script:
+            # Show what arrived, so a value in the wrong column is easy to spot
+            received = params if params else "none (no Parameter-N cell has a value)"
+            details += (
+                f"\n\nParameter-1 was blank, so this is the list of all databases. "
+                f"Parameters received: {received}"
+            )
+        return (success, message, details)
     except Exception as e:
         return (False, "Error running db_report", f"{type(e).__name__}: {e}")
 

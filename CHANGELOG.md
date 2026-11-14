@@ -2,6 +2,10 @@
 
 Version lives in `pyproject.toml` (`version = "..."`). Newest first. Bump rules are in [docs/scripts.md](docs/scripts.md#versioning).
 
+## 0.5.2 - 2026-11-14
+
+- `db_report.py`: when `Parameter-1` is blank (so it lists all databases), the result now ends with the parameters it actually received. Makes a value typed in the wrong column visible.
+
 ## 0.5.1 - 2026-11-14
 
 - `pulse_monitor.py`: it kept sampling after `Parameter-1` was set to `0` because the row had not been set to `START` again (not a bug; a change only applies on `START`). Made this easier to diagnose: the timer and sample service are now stopped in separate calls; every start/stop result shows what `Parameter-1` was read as and what systemd still has loaded; a blank `Parameter-1` while a schedule runs now says so in the result.
