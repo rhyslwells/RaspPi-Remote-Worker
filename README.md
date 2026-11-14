@@ -1,6 +1,6 @@
 # RaspPi Remote Worker
 
-Version 0.3.0 ([changelog](CHANGELOG.md), [how to bump](docs/scripts.md#versioning)). The version is shown in every update message.
+Version 0.4.0 ([changelog](CHANGELOG.md), [how to bump](docs/scripts.md#versioning)). The version is shown in every update message.
 
 A Raspberry Pi task runner controlled from a Google Sheet. A systemd service on the Pi polls the sheet, runs the Python script named in any row whose status is `START`, and writes the result back. No web UI and no SSH needed to trigger a job: change a cell.
 
@@ -61,6 +61,7 @@ scripts/
   utils/list_sheets.py     lists sheets the credentials can see
   utils/script_db.py       per-script SQLite databases (data/<script>.db)
   db_report.py             shows what is stored in those databases
+  restart_pi.py            restarts the service or reboots the Pi from a sheet cell
   test_connection.py       checks sheet access
   prime_hunter.py          example task with parameters
   git_pull_update.py       pulls the latest code on the Pi from a sheet cell

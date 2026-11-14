@@ -2,6 +2,11 @@
 
 Version lives in `pyproject.toml` (`version = "..."`). Newest first. Bump rules are in [docs/scripts.md](docs/scripts.md#versioning).
 
+## 0.4.0 - 2026-11-14
+
+- Added `scripts/restart_pi.py`: restart the runner service (default) or reboot the Pi from a Config sheet cell (`Parameter-1` = `service` or `reboot`). The restart is scheduled via systemd so the script can still report SUCCESS first. Needs passwordless sudo for the service user.
+- `prime_hunter.py` now stores every prime it finds in a `primes` table in `data/prime_hunter.db` (duplicates ignored) and reports how many were new.
+
 ## 0.3.0 - 2026-11-14
 
 - Added per-script SQLite databases (`data/<script>.db`, gitignored) via `scripts/utils/script_db.py` (standard library only). The runner now records every execution (parameters, success, message, details, duration) in the script's `runs` table. Scripts can add their own tables with `connect()`.

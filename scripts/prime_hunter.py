@@ -9,11 +9,13 @@ Parameters (from Google Sheet Config):
 """
 
 import sys
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
 from utils.control_panel import ControlPanel
+from utils.script_db import connect
 
 
 def find_primes(start: int, end: int) -> list:
@@ -36,6 +38,35 @@ def find_primes(start: int, end: int) -> list:
         if is_prime:
             primes.append(num)
     return primes
+
+
+def store_primes(primes: list):
+    """
+    Save primes to the 'primes' table in data/prime_hunter.db (duplicates ignored).
+
+    Returns:
+        Number of primes not seen before, or None if the database was unavailable
+        (a database problem must not fail the run).
+    """
+    try:
+        db = connect("prime_hunter")
+        try:
+            with db:
+                db.execute(
+                    "CREATE TABLE IF NOT EXISTS primes ("
+                    "n INTEGER PRIMARY KEY, first_found TEXT NOT NULL)"
+                )
+                before = db.execute("SELECT COUNT(*) FROM primes").fetchone()[0]
+                db.executemany(
+                    "INSERT OR IGNORE INTO primes (n, first_found) VALUES (?, ?)",
+                    [(p, datetime.now().strftime("%Y-%m-%d %H:%M:%S")) for p in primes],
+                )
+                after = db.execute("SELECT COUNT(*) FROM primes").fetchone()[0]
+        finally:
+            db.close()
+        return after - before
+    except Exception:
+        return None
 
 
 def main():
@@ -61,8 +92,11 @@ def main():
         
         # Find primes in the specified range
         primes = find_primes(start, end)
-        
+
         message = f"Found {len(primes)} primes between {start} and {end}"
+        new_count = store_primes(primes)
+        if new_count is not None:
+            message += f" ({new_count} new stored)"
         
         # Record all primes in details
         details = f"Primes: {primes}"
