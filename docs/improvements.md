@@ -15,6 +15,8 @@ Findings from a code review of `scripts/runner.py` and `scripts/utils/control_pa
 | 7 | Sheet drift. Live Config has a `Description` column that `_init_config_sheet` does not create; a rebuilt sheet will not match | `_init_config_sheet` | Add `Description`, keep Priority in position F |
 | 8 | Lost results on reset. `Last Used` is overwritten on both RUNNING and the final state, so run duration is not recorded | `set_script_status` | Log duration in the final Log row |
 
+| 9 | The service `PATH` contains only `.venv/bin` (set in `setup_systemd.sh`), so scripts cannot run system tools such as `git` by name. `git_pull_update.py` works around it with a fallback search path | `setup_systemd.sh` unit `Environment="PATH=..."` | Append `:/usr/local/bin:/usr/bin:/bin` to the unit's PATH and re-run the setup (systemd change: ask first) |
+
 ## Efficiency
 
 - `set_script_status` makes about five API calls per transition (`find`, up to three `update_cell`, one `append_row`). Replace the three `update_cell` calls with a single `update` of the row range, and look the row number up once per run. This matters for Sheets API quotas once scripts are scheduled.

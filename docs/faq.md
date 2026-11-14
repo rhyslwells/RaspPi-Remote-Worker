@@ -14,7 +14,11 @@ Three ways to update, after pushing: set `git_pull_update.py` to `START` in the 
 
 No, on purpose: restarting from inside the runner would kill it before it could record the result and leave the row on `RUNNING`. It tells you "restart needed" when `runner.py` or `utils/` changed; restart with `restart_raspi_service` or `sudo systemctl restart remote-worker.service`. A script-only change needs no restart.
 
-### Why did `git_pull_update.py` fail?
+### Why did `git_pull_update.py` fail with "No such file or directory: 'git'"?
+
+The systemd unit sets `PATH` to the venv's `bin` only, so the runner cannot see `/usr/bin/git`. The script now searches `/usr/local/bin`, `/usr/bin` and `/bin` as a fallback. Any new script that shells out to a system tool has the same limit: use the full path or the same fallback. To fix it for every script, add `/usr/bin:/bin` to the `PATH` in `setup_systemd.sh` and reinstall the unit (a systemd change; ask first).
+
+### Why else might `git_pull_update.py` fail?
 
 `git pull failed` with "local changes would be overwritten" means someone edited files on the Pi; with "Not possible to fast-forward" the Pi has commits GitHub does not. The script changes nothing in either case. Fix on the Pi by hand (`git status`).
 

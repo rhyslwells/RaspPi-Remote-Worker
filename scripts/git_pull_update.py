@@ -20,18 +20,32 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEPENDENCY_FILES = ("pyproject.toml", "uv.lock")
 RESTART_PREFIXES = ("scripts/runner.py", "scripts/utils/")
 MAX_LISTED_FILES = 40
+# The systemd unit sets PATH to the venv's bin only, so git in /usr/bin is not found
+FALLBACK_DIRS = ("/usr/local/bin", "/usr/bin", "/bin")
 
 
-def _git(*args: str, timeout: int = 30) -> subprocess.CompletedProcess:
+def _search_path() -> str:
+    parts = [str(Path(sys.executable).parent), os.environ.get("PATH", "")]
+    parts.extend(FALLBACK_DIRS)
+    return os.pathsep.join(p for p in parts if p)
+
+
+def _run(args: list[str], timeout: int) -> subprocess.CompletedProcess:
+    env = {**os.environ, "PATH": _search_path()}
     return subprocess.run(
-        ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True, timeout=timeout
+        args, cwd=REPO_ROOT, capture_output=True, text=True, timeout=timeout, env=env
     )
 
 
+def _git(*args: str, timeout: int = 30) -> subprocess.CompletedProcess:
+    git = shutil.which("git", path=_search_path())
+    if git is None:
+        raise FileNotFoundError("git not found (searched venv bin, PATH, /usr/bin)")
+    return _run([git, *args], timeout)
+
+
 def _find_uv() -> str | None:
-    venv_bin = str(Path(sys.executable).parent)
-    search_path = venv_bin + os.pathsep + os.environ.get("PATH", "")
-    return shutil.which("uv", path=search_path)
+    return shutil.which("uv", path=_search_path())
 
 
 def main():
@@ -61,9 +75,7 @@ def main():
             uv = _find_uv()
             if uv is None:
                 return (False, "Pulled, but uv not found", "Run `uv sync` manually")
-            sync = subprocess.run(
-                [uv, "sync"], cwd=REPO_ROOT, capture_output=True, text=True, timeout=600
-            )
+            sync = _run([uv, "sync"], timeout=600)
             if sync.returncode != 0:
                 return (False, "Pulled, but uv sync failed", sync.stderr.strip()[-1500:])
             notes.append("Dependencies synced")
@@ -82,6 +94,8 @@ def main():
         details = "\n".join(notes + ["Changed files:"] + listed)
         return (True, message, details)
 
+    except FileNotFoundError as e:
+        return (False, "Required tool not found", str(e))
     except subprocess.TimeoutExpired as e:
         return (False, "Command timed out", f"{e.cmd} after {e.timeout}s")
     except Exception as e:
