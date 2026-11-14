@@ -123,10 +123,11 @@ Bump it with every change you push to the Pi (a typo fix in the docs does not ne
 
 Steps, in one commit:
 
-1. Edit `version` in `pyproject.toml`.
-2. Add an entry at the top of `CHANGELOG.md` (date, what changed, any manual step such as "restart the service").
-3. Run `uv lock`. `uv.lock` records the project version, and a stale lock makes `uv sync --locked` fail on the Pi.
-4. Commit, push, then update the Pi.
+1. Bump with uv: `uv version --bump patch --no-sync` (or `minor` / `major`). This edits `pyproject.toml` and `uv.lock` together; `--no-sync` leaves your local venv alone. `uv version` alone prints the current version, and `--dry-run` previews a bump.
+2. Update the version in the README header, and add an entry at the top of `CHANGELOG.md` (date, what changed, any manual step such as "restart the service").
+3. Commit, push, then update the Pi.
+
+Do not edit `version` by hand without running `uv lock`: `uv.lock` records the project version, and a stale lock makes `uv sync --locked` fail on the Pi.
 
 ## Monitoring
 

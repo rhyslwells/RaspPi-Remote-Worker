@@ -57,7 +57,7 @@ sequenceDiagram
 - **Never run commands against the real Pi or the live Google Sheet** (ssh, scp, systemctl via helper, running `runner.py`, `reset_all_to_idle`) without the user asking for it. Those are outward-facing actions with real side effects.
 - Do not add a dependency or change the Python version without asking (the Pi has limited resources; see [DEPLOYMENT.md](DEPLOYMENT.md)).
 
-- **Versioning:** bump `version` in `pyproject.toml`, add a `CHANGELOG.md` entry, run `uv lock`, and update the README header with every change that will be pushed to the Pi. See [WORKFLOW.md](WORKFLOW.md#versioning).
+- **Versioning:** with every change that will be pushed to the Pi, run `uv version --bump <patch|minor|major> --no-sync` (updates `pyproject.toml` and `uv.lock`), add a `CHANGELOG.md` entry, and update the README header. See [WORKFLOW.md](WORKFLOW.md#versioning).
 
 ## Ask before changing
 

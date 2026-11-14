@@ -24,7 +24,7 @@ The update message shows it (`Updated v0.2.0 -> v0.3.0 ...` or `Already up to da
 
 ### Why did the update say "uv sync failed (run `uv lock` and push?)"?
 
-The version was bumped in `pyproject.toml` but `uv.lock` was not regenerated. The pull succeeded and the Pi's checkout is untouched. On your PC run `uv lock`, commit `uv.lock`, push, and run the update again.
+The version was edited in `pyproject.toml` by hand and `uv.lock` was not regenerated (`uv version --bump ... --no-sync` avoids this). The pull succeeded and the Pi's checkout is untouched. On your PC run `uv lock`, commit `uv.lock`, push, and run the update again.
 
 ### Why else might `git_pull_update.py` fail?
 

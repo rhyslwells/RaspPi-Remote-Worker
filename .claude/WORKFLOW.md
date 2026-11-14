@@ -25,7 +25,7 @@
 The version is `pyproject.toml` `version`; history is `CHANGELOG.md`; the rules and steps are in `docs/scripts.md#versioning`. The user wants it incremented whenever a change is going to be pushed to the Pi.
 
 - When finishing a change that is meant to be committed or pushed (anything beyond a trivial docs typo), propose the bump level (patch: fix/tweak; minor: new script, new runner or sheet behaviour, or anything needing a restart) and apply it together with a `CHANGELOG.md` entry.
-- Always run `uv lock` after changing `version`. `uv.lock` records the project version, and `git_pull_update.py` runs `uv sync --locked`, so a stale lock makes the Pi update fail.
+- Bump with `uv version --bump patch|minor|major --no-sync`, which updates `pyproject.toml` and `uv.lock` together (`--dry-run` previews). If `version` is ever edited by hand, run `uv lock`. `uv.lock` records the project version and `git_pull_update.py` runs `uv sync --locked`, so a stale lock makes the Pi update fail.
 - The README header also states the version; update it in the same commit.
 - Commit and push only when asked; the bump itself is part of the change, not a separate step.
 
