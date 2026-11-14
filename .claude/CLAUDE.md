@@ -42,6 +42,7 @@ sequenceDiagram
 ```
 
 - `scripts/runner.py` - polling loop; loads `scripts/<name>.py` dynamically and calls `main()`
+- `scripts/utils/script_db.py` - one SQLite file per script in `data/` (gitignored); the runner records every run (parameters, result, duration) there and scripts can add their own tables. `scripts/db_report.py` reads them
 - `scripts/utils/control_panel.py` - `ControlPanel` class: all Google Sheets I/O, `ScriptStatus` enum, lifecycle, parameter reading
 - `scripts/*.py` - task scripts. Contract: `main()` returns `(success: bool, message: str, details: str)`
 - Sheet: spreadsheet `RaspPI-Remote-Worker`, worksheets `Config` (Script Name, Status, Last Used, Details, Priority, Parameter-N) and `Log`
@@ -54,6 +55,7 @@ sequenceDiagram
 ## Hard Rules
 
 - **Never read, print, copy, commit or paste `credentials.json`.** It is a Google service-account key and is gitignored. Also treat `.raspi-config` (Pi IP) and `.env*` as private.
+- **Never read, print or commit `data/*.db`.** The per-script databases hold run parameters and results; they are gitignored.
 - **Never run commands against the real Pi or the live Google Sheet** (ssh, scp, systemctl via helper, running `runner.py`, `reset_all_to_idle`) without the user asking for it. Those are outward-facing actions with real side effects.
 - Do not add a dependency or change the Python version without asking (the Pi has limited resources; see [DEPLOYMENT.md](DEPLOYMENT.md)).
 
@@ -62,6 +64,7 @@ sequenceDiagram
 ## Ask before changing
 
 - The script contract (`main()` return tuple) or `ScriptStatus` values
+- The `runs` table schema in `script_db.py` (existing `.db` files on the Pi will not migrate)
 - Config / Log sheet column layout (breaks the live sheet and every script)
 - The runner loop, polling interval, or how scripts are loaded (subprocess vs import)
 - The systemd unit, service name, or install paths

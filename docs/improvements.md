@@ -26,9 +26,9 @@ Findings from a code review of `scripts/runner.py` and `scripts/utils/control_pa
 
 1. **Scheduling.** Today every run needs a human to type `START`. Add a `Schedule` column (for example `every 1h` or a cron string) and let the runner set `START` when due. This unlocks monitoring and ETL scripts, and is the biggest single upgrade.
 2. **Failure notification.** Email or push on `FAILED`, so a nightly job failing is noticed without opening the sheet.
-3. **Self-restart after update.** `git_pull_update.py` reports "restart needed" but cannot restart the service safely from inside the runner. Once stuck-`RUNNING` recovery (item 2 above) exists, the runner could restart itself after recording the result.
+3. **Self-restart after update.** `git_pull_update.py` reports "restart needed" but cannot restart the service safely from inside the runner. Partly done: `restart_pi.py` restarts the service (or reboots) from the sheet by scheduling it through systemd, so the result is recorded first. Still open: doing it automatically after an update that touched `runner.py` or `utils/`, and stuck-`RUNNING` recovery (item 2 above) for restarts that were not scheduled.
 4. **Concurrency.** Subprocess per script with a timeout, optionally a worker pool. Required for any long-running idea in `docs/script_ideas.md` (tier B).
-5. **Per-script output file.** Capture stdout/stderr per run under `logs/<script>/<timestamp>.log` and put the path in the Log row.
+5. **Per-script output file.** (Run results and parameters are now stored in `data/<script>.db`; this item is only about raw stdout/stderr.) Capture stdout/stderr per run under `logs/<script>/<timestamp>.log` and put the path in the Log row.
 
 ## Repo hygiene
 

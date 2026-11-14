@@ -76,7 +76,7 @@ The Pi does not update itself: push to GitHub first, then use any one of these.
 
 | Method | How | Restarts the service? |
 |--------|-----|-----------------------|
-| From the sheet | Set `git_pull_update.py` to `START` in `Config` (add the row once) | No; the result says "restart needed" when `runner.py` or `utils/` changed |
+| From the sheet | Set `git_pull_update.py` to `START` in `Config` (add the row once) | No; the result says "restart needed" when `runner.py` or `utils/` changed. Then set `restart_pi.py` to `START` (`Parameter-1` blank = restart the service) |
 | From your PC | `update_raspi_repo` (helper script, below) | Yes |
 | On the Pi | the commands below | Yes |
 

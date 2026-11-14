@@ -10,4 +10,7 @@ All Pi-facing actions are outward-facing and affect a live service. Run them onl
 - The service runs from the repo root as `.venv/bin/python3 scripts/runner.py`; the repo is at `~/Desktop/RaspPi-Remote-Worker` on the Pi.
 - A push to `main` is effectively a deploy (`update_raspi_repo` pulls it). Commit or push only when asked.
 - Low-power hardware: avoid heavy dependencies; prefer the standard library.
+- `restart_pi.py`, `git_pull_update.py` and anything that runs `sudo` act on the live Pi. Do not trigger them or mock-test with real `sudo`; test with mocked `subprocess` as was done for `restart_pi.py`.
+- A change to `runner.py` or `scripts/utils/` needs a service restart after the pull; say so when proposing the deploy. The first restart onto a new runner must be done the old way (helper or SSH), since the old runner cannot be restarted by the new script.
+- `data/*.db` holds run parameters and results: treat as private, never commit (gitignored) or paste. It is not backed up.
 - `*.sh` files must keep LF line endings and stay executable.

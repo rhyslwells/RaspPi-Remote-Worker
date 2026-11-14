@@ -15,6 +15,8 @@ To run one script, `run_script(name)`:
 
 Scripts run inside the runner process, one at a time. There is no timeout.
 
+After each run, `run_and_record` writes the parameters, result and duration to that script's SQLite database (see `utils/script_db.py` under [Included scripts](#included-scripts)). Recording is best effort and cannot change the result.
+
 ## Sheet layout
 
 Spreadsheet `RaspPI-Remote-Worker`. Both tabs are created with headers if missing.

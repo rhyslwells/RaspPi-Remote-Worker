@@ -37,7 +37,7 @@ Check API terms and rate limits before relying on any external source.
 
 | Idea | Why the Pi suits it | Needs |
 |------|--------------------|-------|
-| Scheduled data pull and ETL into SQLite (hourly API poll) | Always on, I/O bound | Scheduler column, append-only SQLite |
+| Scheduled data pull and ETL into SQLite (hourly API poll) | Always on, I/O bound | Scheduler column; SQLite is available now via `utils/script_db.py` |
 | Regime-shift detector (CUSUM or Bayesian change-point) on a polled series | Needs 24/7 listening; store state per timestamp for a long-term state map | Scheduler, state table |
 | MCMC posterior updates (PyMC / NUTS every few hours on the last 30 days) | CPU-heavy, no GPU, runs unattended | Subprocess + timeout, RAM check on the Pi, trace summary written to `model_metadata` |
 | Symbolic regression "formula finder" with `gplearn` (see `docs/knowledge/Symbolic_Regression.md`) | Genetic programming is iterative; a run can take many hours | Subprocess + timeout, checkpoint results to disk |

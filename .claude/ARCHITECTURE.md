@@ -14,9 +14,12 @@ Controller (Google Sheet) -> worker (`scripts/runner.py` under systemd) -> task 
 - **Service-account auth via `credentials.json`** with `oauth2client` + `gspread.authorize`. Legacy but working; migrating is a possible cleanup, not a drive-by change.
 - **Parameters live in the sheet**, so changing a run's inputs needs no deploy.
 - **systemd owns persistence**: `Restart=always`, `RestartSec=10`, output to `logs/service.log`.
+- **Run history lives in SQLite, one file per script** (`data/<script>.db`, stdlib `sqlite3` via `scripts/utils/script_db.py`). The runner records every run in `run_and_record`; scripts add their own tables with `connect()`. The sheet stays the controller and the short-term view; the databases are the durable record. Recording is best effort: a database error is logged and never changes the script's result.
+- **A script cannot restart its own runner inline.** `restart_pi.py` schedules the restart (`systemd-run --on-active` or `shutdown -r +1`) and returns first, so SUCCESS is recorded. Do the same for any script that stops or restarts the service.
 
 ## Consequences to keep in mind
 
 - Columns A-D of `Config` are addressed by position (1-4) in `set_script_status` and `reset_all_to_idle`; the rest is read by header name. The live sheet has drifted from `_init_config_sheet` (extra `Description` column).
 - `ControlPanel` finds a row with `worksheet.find(script_name)`, which searches every cell, so a cell mentioning another script's name can be matched first.
+- `runner.py` and `scripts/utils/` are loaded once at service start; a pull does not take effect until the service restarts (scripts are re-read every run). A new recording or runner feature looks "broken" until then.
 - Nothing recovers a row left on `RUNNING` by a restart; nothing prevents `runner.py` being triggered as a script from the sheet. Both are in `docs/improvements.md`.

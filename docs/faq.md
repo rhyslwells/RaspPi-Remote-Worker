@@ -6,13 +6,13 @@ Short answers to questions that keep coming up. Add new ones at the bottom of th
 
 ### Does the Pi update automatically when I change the repo?
 
-No. The Pi has its own clone. A change reaches it only after you push to GitHub and then pull on the Pi. Nothing automates this (a `git_pull_update.py` script is only an idea in [script_ideas.md](script_ideas.md)).
+No. The Pi has its own clone. A change reaches it only after you push to GitHub and then pull on the Pi. Nothing automates this; `git_pull_update.py` does the pull when you set it to `START`.
 
 Three ways to update, after pushing: set `git_pull_update.py` to `START` in the sheet, run `update_raspi_repo` from the helper script on your PC, or run the commands on the Pi. See [setup.md](setup.md#6-updating).
 
 ### Does `git_pull_update.py` restart the service?
 
-No, on purpose: restarting from inside the runner would kill it before it could record the result and leave the row on `RUNNING`. It tells you "restart needed" when `runner.py` or `utils/` changed; restart with `restart_raspi_service` or `sudo systemctl restart remote-worker.service`. A script-only change needs no restart.
+No, on purpose: restarting from inside the runner would kill it before it could record the result and leave the row on `RUNNING`. It tells you "restart needed" when `runner.py` or `utils/` changed. Restart from the sheet with `restart_pi.py` (it schedules the restart, so the result is recorded first), or with `restart_raspi_service` or `sudo systemctl restart remote-worker.service`. A script-only change needs no restart.
 
 ### Why did `git_pull_update.py` fail with "No such file or directory: 'git'"?
 
@@ -35,13 +35,13 @@ The version was edited in `pyproject.toml` by hand and `uv.lock` was not regener
 | What changed | Needed |
 |--------------|--------|
 | A task script in `scripts/` | Nothing. It is re-read from disk on every run |
-| `runner.py` or `scripts/utils/control_panel.py` | Restart the service (loaded once at startup) |
+| `runner.py` or anything in `scripts/utils/` | Restart the service (loaded once at startup) |
 | `pyproject.toml` dependencies | `uv sync`, then restart |
 | `setup_systemd.sh` | Re-run it, then `sudo systemctl daemon-reload` and restart |
 
 ### Which files never sync through git?
 
-`credentials.json`, `.env`, `logs/` and `docs/notes.md` are gitignored. Copy `credentials.json` with `scp` ([setup.md](setup.md#4-deploy-credentials)). `.raspi-config` (your Pi's IP for the helper script) is currently tracked in git, so it does sync.
+`credentials.json`, `.env`, `logs/`, `data/` (the per-script databases) and `docs/notes.md` are gitignored. Copy `credentials.json` with `scp` ([setup.md](setup.md#4-deploy-credentials)). `.raspi-config` (your Pi's IP for the helper script) is currently tracked in git, so it does sync.
 
 ### Does a push to `main` deploy?
 
@@ -68,6 +68,24 @@ Not yet. Every run needs a `START`. A `Schedule` column is the top proposal in [
 ### Can two scripts run at once?
 
 No. The runner executes them one at a time, in its own process, with no timeout. A long script delays everything else.
+
+## Stored data
+
+### Where are results and inputs stored?
+
+In one SQLite file per script, `data/<script>.db` on the Pi, created on the first run after the service has been restarted onto the new runner. The `runs` table has one row per execution (parameters, success, message, details, duration); scripts can add their own tables. See [scripts.md](scripts.md#included-scripts).
+
+### How do I see what is in the databases?
+
+Set `db_report.py` to `START`: `Parameter-1` blank lists every database, a script name shows its latest runs, `Parameter-2` is how many (default 20). Or run `python scripts/db_report.py [script] [--limit N]` on the Pi.
+
+### Why does `db_report.py` say "No databases yet" or not show its own run?
+
+No database exists until a script has finished under a runner that has the recording code, so restart the service after updating (the runner is loaded once). A run is recorded after it finishes, so `db_report.py` never shows itself until its next run.
+
+### Are the databases backed up?
+
+No. `data/` is gitignored and not copied anywhere. Copy the `.db` files off the Pi (`scp`) if they matter.
 
 ## Project
 
