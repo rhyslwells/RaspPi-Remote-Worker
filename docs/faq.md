@@ -29,7 +29,7 @@ No, on purpose: restarting from inside the runner would kill it before it could 
 
 ### Which files never sync through git?
 
-`credentials.json`, `.raspi-config`, `.env`, `logs/` and `docs/notes.md` are gitignored. Copy `credentials.json` with `scp` ([setup.md](setup.md#4-deploy-credentials)).
+`credentials.json`, `.env`, `logs/` and `docs/notes.md` are gitignored. Copy `credentials.json` with `scp` ([setup.md](setup.md#4-deploy-credentials)). `.raspi-config` (your Pi's IP for the helper script) is currently tracked in git, so it does sync.
 
 ### Does a push to `main` deploy?
 

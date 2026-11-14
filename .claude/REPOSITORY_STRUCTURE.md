@@ -25,7 +25,7 @@ RaspPi-Remote-Worker/
 ├── pyproject.toml, uv.lock    # Dependencies (uv)
 ├── README.md
 ├── credentials.json           # SECRET, gitignored
-├── .raspi-config              # Pi IP, gitignored in practice (do not commit changes)
+├── .raspi-config              # Pi IP for the helper script; currently tracked in git (private-ish, do not edit unasked)
 ├── logs/                      # Runtime logs (gitignored *.log)
 └── .claude/                   # This directory
 ```

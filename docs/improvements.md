@@ -32,6 +32,6 @@ Findings from a code review of `scripts/runner.py` and `scripts/utils/control_pa
 
 - `pyproject.toml` points at a missing `src/remote_worker` package and lists pandas, numpy and matplotlib, none of which any script imports.
 - `raspi-helper.sh` header still mentions a `raspi-helper.ps1` that was removed, and `setup_initial.sh` prints "Step N/6" for four steps and an `scp` hint with the wrong path and user.
-- Install path differs between `setup_systemd.sh` (`~/Desktop/RaspPi-Remote-Worker`) and `raspi-helper.sh` (`~/RaspPi-Remote-Worker`).
+- `.raspi-config` (the Pi's local IP) is tracked in git. Untrack it with `git rm --cached .raspi-config` and add it to `.gitignore`; it stays in the git history.
 - `docs/notes.md` (gitignored) holds a password hint, the Wi-Fi network name, an account email and the Pi's IP. It is not tracked, but it should not live in the repo folder.
 - There are no tests. A tiny `pytest` file for the pure functions (e.g. `find_primes`) and a fake-`ControlPanel` test for `run_script` would cover the worst failure modes (items 1, 4) without touching the live sheet.

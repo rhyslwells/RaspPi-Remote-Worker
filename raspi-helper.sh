@@ -60,13 +60,13 @@ copy_credentials_to_raspi() {
     fi
     
     echo -e "${GREEN}Copying $cred_path to Pi...${NC}"
-    scp "$cred_path" "$PI_USER@${PI_IP}:~/RaspPi-Remote-Worker/"
+    scp "$cred_path" "$PI_USER@${PI_IP}:~/Desktop/RaspPi-Remote-Worker/"
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}Success! Credentials copied.${NC}"
         echo ""
         echo -e "${CYAN}Next: Verify on Pi with:${NC}"
-        echo "  ssh pi@$PI_IP 'ls -la ~/RaspPi-Remote-Worker/credentials.json'"
+        echo "  ssh pi@$PI_IP 'ls -la ~/Desktop/RaspPi-Remote-Worker/credentials.json'"
     fi
 }
 
@@ -82,7 +82,7 @@ get_raspi_logs() {
     mkdir -p "$local_path"
     
     echo -e "${GREEN}Downloading logs from Pi...${NC}"
-    scp -r "$PI_USER@${PI_IP}:~/RaspPi-Remote-Worker/logs/*" "$local_path/"
+    scp -r "$PI_USER@${PI_IP}:~/Desktop/RaspPi-Remote-Worker/logs/*" "$local_path/"
     
     echo -e "${GREEN}Logs downloaded to: $local_path${NC}"
 }
@@ -158,7 +158,7 @@ update_raspi_repo() {
     fi
     
     echo -e "${GREEN}Updating repository on Pi...${NC}"
-    ssh $PI_USER@"$PI_IP" "cd ~/RaspPi-Remote-Worker && git pull origin main && source .venv/bin/activate && uv sync && sudo systemctl restart remote-worker.service"
+    ssh $PI_USER@"$PI_IP" "cd ~/Desktop/RaspPi-Remote-Worker && git pull origin main && source .venv/bin/activate && uv sync && sudo systemctl restart remote-worker.service"
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}Update complete! Service restarted.${NC}"
@@ -203,7 +203,7 @@ test_raspi_connection() {
     # Repository
     echo ""
     echo -e "${CYAN}3. Checking repository...${NC}"
-    if ssh $PI_USER@"$PI_IP" "test -d ~/RaspPi-Remote-Worker" 2>/dev/null; then
+    if ssh $PI_USER@"$PI_IP" "test -d ~/Desktop/RaspPi-Remote-Worker" 2>/dev/null; then
         echo -e "   ${GREEN}✓ Repository found${NC}"
     else
         echo -e "   ${RED}✗ Repository not found${NC}"
@@ -213,7 +213,7 @@ test_raspi_connection() {
     # Credentials
     echo ""
     echo -e "${CYAN}4. Checking credentials.json...${NC}"
-    if ssh $PI_USER@"$PI_IP" "test -f ~/RaspPi-Remote-Worker/credentials.json" 2>/dev/null; then
+    if ssh $PI_USER@"$PI_IP" "test -f ~/Desktop/RaspPi-Remote-Worker/credentials.json" 2>/dev/null; then
         echo -e "   ${GREEN}✓ Credentials found${NC}"
     else
         echo -e "   ${RED}✗ Credentials not found (copy with: copy_credentials_to_raspi)${NC}"

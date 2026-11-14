@@ -97,7 +97,7 @@ Run from the repo root in Git Bash, WSL or any bash shell:
 
 ```bash
 source raspi-helper.sh
-save_raspi_config <pi-ip>     # once; stored in .raspi-config (gitignored)
+save_raspi_config <pi-ip>     # once; stored in .raspi-config (tracked in git)
 ```
 
 | Command | Purpose |
@@ -112,7 +112,7 @@ save_raspi_config <pi-ip>     # once; stored in .raspi-config (gitignored)
 | `get_raspi_info` | OS, Python, disk, memory, IP, service state |
 | `show_help` | List commands |
 
-The SSH user is set by `PI_USER` at the top of the script. Known issue: the script's `copy_credentials_to_raspi`, `get_raspi_logs` and `update_raspi_repo` use `~/RaspPi-Remote-Worker`, while the service lives in `~/Desktop/RaspPi-Remote-Worker`. Edit the paths or move the repo until this is fixed.
+The SSH user is set by `PI_USER` at the top of the script. All remote paths are `~/Desktop/RaspPi-Remote-Worker`.
 
 ## Troubleshooting
 

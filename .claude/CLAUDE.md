@@ -82,7 +82,8 @@ Report these if relevant to the task; fix only when asked.
 - `pyproject.toml` declares `packages = ["src/remote_worker"]`, which does not exist, and lists pandas / numpy / matplotlib that no current script imports.
 - The live Config sheet has a `Description` column and a `runner.py` row that the code does not know about; the full list of review findings is in `docs/improvements.md`.
 - Spreadsheet name is spelled `RaspPI-Remote-Worker` in code (capital I) in `runner.py`, `test_connection.py`, `prime_hunter.py`.
-- Install path differs: `setup_systemd.sh` uses `~/Desktop/RaspPi-Remote-Worker`, `raspi-helper.sh` uses `~/RaspPi-Remote-Worker`.
+- `.raspi-config` (the Pi's IP) is tracked in git although it is treated as private. Untracking it (`git rm --cached`, add to `.gitignore`) is the user's call.
+- The Pi's repo is at `~/Desktop/RaspPi-Remote-Worker` (confirmed on the Pi); `setup_initial.sh` still prints an `scp` hint with `pi@` and `~/RaspPi-Remote-Worker`.
 - `credentials.json` is loaded relative to the working directory, so scripts and the service must run from the repo root.
 - `raspi-helper.sh` header refers to a `raspi-helper.ps1` that was removed.
 
