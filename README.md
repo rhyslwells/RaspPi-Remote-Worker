@@ -1,97 +1,88 @@
 # RaspPi Remote Worker
 
-## Overview
+A Raspberry Pi task runner controlled from a Google Sheet. A systemd service on the Pi polls the sheet, runs the Python script named in any row whose status is `START`, and writes the result back. No web UI and no SSH needed to trigger a job: change a cell.
 
-**RaspPi Remote Worker** is a Raspberry Pi-based task execution system that enables remote, scheduled, and on-demand task management through a simple Google Sheets control panel.
+**Control panel:** [Google Sheets dashboard](https://docs.google.com/spreadsheets/d/1d9QU9st_j2gY4Qp7gkhNu5PB016w58sfkjGkW4JydD8/edit?gid=0#gid=0)
 
-The system uses a classic "Remote Worker" architecture: a persistent service runs on a Raspberry Pi, polling a Google Sheet for task commands, executing local Python scripts, and reporting execution status back to the sheet. No complex web UI or SSH access needed—just update a spreadsheet cell to trigger tasks.
+## How it works
 
-**Control Panel:** [Google Sheets Dashboard](https://docs.google.com/spreadsheets/d/1d9QU9st_j2gY4Qp7gkhNu5PB016w58sfkjGkW4JydD8/edit?gid=0#gid=0)
-
-## Documentation
-
-Complete setup and implementation guides are in the `docs/` folder:
-
-* [Project Overview](./docs/0-project-overview.md) — Architecture and system design
-* [Phase 1: Environment Setup](./docs/phase-1-environment-setup.md) — Google Cloud API, repository setup
-* [Phase 2: Runner Logic](./docs/phase-2-runner-logic.md) — Core polling loop and systemd service
-* [Phase 3: Implementation Ideas](./docs/phase-3-implementation-ideas.md) — Example scripts to get started
-
-## System Components
-
-### 1. The Controller (Google Sheets)
-A spreadsheet with columns for `Script Name` and `Status`, acting as a centralized control panel.
-
-### 2. The Worker (Raspberry Pi)
-A systemd service running a Python loop that:
-* Polls the Google Sheet API for task commands
-* Detects "START" flags and executes corresponding scripts
-* Logs execution and updates status back to the sheet
-* Ensures persistence across reboots
-
-### 3. The Scripts (`/scripts` folder)
-Modular Python scripts that perform specific tasks. Examples included to get you started.
-
-## Project Structure
-
-```
-/
-├── runner.py                # Main polling and execution loop
-├── pyproject.toml          # Python dependencies (gspread, oauth2client)
-├── credentials.json        # ⚠️ Service account credentials (NEVER commit)
-├── .gitignore             # Excludes credentials.json
-├── /scripts/              # Task script modules
-├── /docs/                 # Complete documentation
-└── /logs/                 # Service logs (generated at runtime)
+```mermaid
+sequenceDiagram
+    participant U as You
+    participant S as Google Sheet (Config, Log)
+    participant R as runner.py (Pi, systemd)
+    participant T as scripts/*.py
+    U->>S: set Status = START
+    R->>S: poll every 10 s
+    R->>S: Status = RUNNING
+    R->>T: import module, call main()
+    T-->>R: (success, message, details)
+    R->>S: Status = SUCCESS or FAILED, append Log row
 ```
 
-## How It Works
+| Component | What it is |
+|-----------|-----------|
+| Controller | Google Sheet `RaspPI-Remote-Worker` with a `Config` tab (one row per script, plus `Parameter-N` columns) and a `Log` tab (append-only history) |
+| Worker | `scripts/runner.py`, run as `remote-worker.service` so it starts on boot and restarts on failure |
+| Sheet client | `scripts/utils/control_panel.py` (`ControlPanel`): all Google Sheets access |
+| Tasks | `scripts/*.py`, one module per task, each with a `main()` |
 
-1. **Setup:** Google Cloud credentials and Raspberry Pi environment configured
-2. **Service:** Systemd service starts on Pi boot, beginning the polling loop
-3. **Command:** User updates a cell in the Google Sheet to "START"
-4. **Execution:** Worker detects the command, runs the corresponding script from `/scripts`
-5. **Feedback:** Execution log and status ("SUCCESS" or "FAILED") written back to the sheet
-
-## Control Panel Status Reference
+### Status reference
 
 | Status | Meaning |
 |--------|---------|
-| `IDLE` | Ready to execute (default) |
-| `START` | Trigger script execution |
-| `RUNNING` | Script currently executing |
-| `SUCCESS` | Last execution completed successfully |
-| `FAILED` | Last execution encountered an error |
+| `IDLE` | Ready (default) |
+| `START` | Run me |
+| `RUNNING` | Currently executing |
+| `SUCCESS` | Last run succeeded |
+| `FAILED` | Last run failed or raised |
 
-## Getting Started
+## Quick start
 
-### Prerequisites
+1. Create the Google Cloud service account, download `credentials.json`, and share the sheet with it.
+2. On the Pi: `bash setup_initial.sh`, then `bash setup_systemd.sh`.
+3. Copy `credentials.json` to the Pi with `scp` (never through git), then `sudo systemctl start remote-worker.service`.
+4. In the `Config` sheet, set `test_connection.py` to `START` and watch the status change.
 
-* Raspberry Pi (any model) with Raspberry Pi OS
-* Python 3.10+
-* Google Cloud project with service account credentials
-* Internet access (both Pi and primary machine)
+Full steps: [docs/setup.md](docs/setup.md).
 
-### Installation
+## Adding a script
 
-See [Phase 1: Environment Setup](./docs/phase-1-environment-setup.md) for detailed instructions on:
-* Setting up Google Cloud API credentials
-* Configuring the Raspberry Pi
-* Installing dependencies using `uv`
+Create `scripts/my_task.py` with a `main()` that returns `(success, message, details)`, add a row for it in `Config`, set it to `START`. Parameters come from the `Parameter-N` columns. Template and rules: [docs/scripts.md](docs/scripts.md).
 
-## Features
+## Repository layout
 
-* **On-demand execution** — Trigger tasks anytime from the Google Sheet
-* **Persistent service** — Automatic restart on Pi reboot via systemd
-* **Simple control** — No SSH or complex CLI needed; update a spreadsheet cell
-* **Modular scripts** — Easy to write and add your own task scripts
-* **Execution logging** — Full logs stored locally and status tracked in the sheet
-* **Multi-tasking ready** — Architecture supports future multiprocessing expansion
+```
+scripts/
+  runner.py            polling loop and script loader (service entry point)
+  utils/control_panel.py   ControlPanel and ScriptStatus
+  utils/list_sheets.py     lists sheets the credentials can see
+  test_connection.py       checks sheet access
+  prime_hunter.py          example task with parameters
+  pulse_monitor.py, other-ideas.py   notes for future scripts (not runnable)
+docs/                  setup, reference, ideas, improvements
+setup_initial.sh       Pi first-time install
+setup_systemd.sh       installs the systemd service
+raspi-helper.sh        SSH helper functions for the dev machine
+credentials.json       service-account key (gitignored, never commit)
+logs/                  runtime logs (generated)
+.claude/               guidance for Claude Code
+```
 
-## Contributing
+## Documentation
 
-Contributions are welcome via issues or pull requests. Keep changes aligned with the modular architecture and documentation standards.
+| Doc | Contents |
+|-----|----------|
+| [docs/setup.md](docs/setup.md) | Google Cloud, flashing and connecting to the Pi, install, service management, helper script, troubleshooting |
+| [docs/scripts.md](docs/scripts.md) | Runner behaviour, sheet layout, `ControlPanel` API, writing scripts, the included scripts |
+| [docs/script_ideas.md](docs/script_ideas.md) | Backlog of scripts to try (ideas, not implemented) |
+| [docs/improvements.md](docs/improvements.md) | Review findings and proposed changes (not implemented) |
+| [docs/knowledge/](docs/knowledge/) | Reference notes: symbolic regression, SD card recovery on Windows |
+
+## Limitations
+
+Scripts run inside the runner process, one at a time, with no timeout, and nothing runs on a schedule. See [docs/improvements.md](docs/improvements.md).
 
 ## License
 
-This project is open source and intended for personal and educational use.
+Open source, intended for personal and educational use.

@@ -1,81 +1,63 @@
-### The Optimized Prompt
+# Script ideas
 
-> "I am a Data Scientist and Mathematician (PhD) using a Raspberry Pi as a headless computation node. Please suggest Python-based scripts and predictive modeling projects that specifically benefit from **24/7 uptime** and **asynchronous execution**.
-> Focus on tasks that are:
-> 1. **I/O Bound:** High-volume web scraping or API polling with rate-limiting.
-> 2. **Periodic/Cron-based:** Automated SQL database population and ETL pipelines.
-> 3. **Compute-Intensive (Non-GPU):** Long-running Monte Carlo simulations, Markov Chains, or Bayesian inference.
-> 4. **Iterative:** Hyperparameter optimization (e.g., Optuna) using a shared RDB backend.
-> 
-> 
-> Please provide technical implementations that utilize **Python**, **SQL**, and standard data science libraries (Pandas, Scipy, etc.), keeping in mind the ARM architecture and RAM constraints of a Raspberry Pi."
+Backlog of scripts to try on the Pi. Status of everything here: **idea, not implemented** unless marked otherwise. Implemented today: `test_connection.py`, `prime_hunter.py`.
 
----
+## How ideas are tiered
 
-# Ideas:
+The runner executes scripts in-process, one at a time, with no timeout and no scheduler (see `docs/improvements.md`). So ideas split by what they need:
 
-## 6. Symbolic Regression "Formula Finder"
+- **Tier A - works today.** Finishes in seconds to a few minutes, triggered by `START`, parameters from the sheet, result as `(success, message, details)`.
+- **Tier B - needs runner work first.** Long-running (hours), periodic, or needs a subprocess with a timeout.
 
-Instead of a standard "black box" model, use Genetic Programming to find the actual mathematical identity of a dataset.The Task: Feed the Pi a noisy dataset (like weather patterns or financial ratios) and let it run an evolutionary algorithm to "evolve" the best-fitting symbolic expression (e.g., $y = \sin(x^2) + \log(x)$).The Math: Use the gplearn library. It uses a tournament-selection process to evolve mathematical programs.Why it fits: Genetic algorithms are incredibly iterative. A "population" might take 48 hours to reach a global optimum on a Pi, but it’s a "set it and forget it" task that yields a clean formula for your blog.
+Constraints for all: ARM CPU, limited RAM, no GPU. Prefer the standard library; any new dependency must be added to `pyproject.toml` and installed with `uv sync` on the Pi.
 
-### 7. Regime-Shift Detector (Stochastic Time-Series)
-In predictive modeling, identifying when the "rules of the game" have changed is crucial.
+## Tier A: operations and maintenance
 
-The Task: Monitor a live stream of data (e.g., server logs, IoT sensor data, or currency pairs) and use Hidden Markov Models (HMM) or Change Point Detection to flag when the underlying distribution has shifted.
+| Script | What it does | Parameters | Notes |
+|--------|--------------|------------|-------|
+| `system_health.py` | CPU temperature, load, memory, disk, uptime, throttling flags into the Log row. Replaces the `pulse_monitor.py` notes | none | CPU temp from `/sys/class/thermal/thermal_zone0/temp`, `vcgencmd get_throttled`; `psutil` optional. Good first script: instant, safe |
+| `git_pull_update.py` | `git pull`, `uv sync`, report what changed | optional branch | Do not restart the service from inside itself; report "restart needed" or use a detached `systemctl restart`. Pulls on the Pi only; be careful about repos synced to the laptop |
+| `network_check.py` | Ping gateway and a public host, report public IP and DNS result | hosts | Useful when the Pi drops off the network |
+| `log_cleanup.py` | Rotate or delete old files in `logs/` | days to keep | Keeps the SD card from filling; dry-run parameter first |
+| `sheet_backup.py` | Export Config and Log to CSV under `data/` | none | Cheap insurance against sheet edits |
+| `service_report.py` | `systemctl status` and last 20 lines of `logs/service.log` | lines | Reads state without SSH |
 
-The Math: Implement the CUSUM (Cumulative Sum) algorithm or a Bayesian Change Point Detection model.
+## Tier A: quick data and compute
 
-Why it fits: It requires 24/7 "listening" (I/O) and periodic recalculation of the probability that a shift has occurred.
+| Script | What it does | Parameters |
+|--------|--------------|------------|
+| `carbon_intensity.py` | Fetch GB grid carbon intensity from the public National Grid API and append to a CSV and the Log | region (optional) |
+| `weather_fetch.py` | Pull a forecast from a free weather API (Open-Meteo needs no key) for a location | lat, lon |
+| `forecast_backtest.py` | Compare yesterday's actual values to stored predictions; report MAE / RMSE / MAPE | model name, date |
+| `monte_carlo_pi.py` / `random_walk.py` | Short Monte Carlo with a fixed seed; a safe test of parameter handling | n samples, seed |
+| `url_status.py` | HTTP status and latency for a list of sites | urls |
 
-SQL Use: Store the "State" of the system at every timestamp to build a long-term "State Map."
+Check API terms and rate limits before relying on any external source.
 
-### Differential Equation Solvers & Parameter Sweeps
+## Tier B: long-running or scheduled (needs runner changes)
 
-* **Differential Equation Solver (Parameter Sweep):** If you are modeling a physical or economic system, let the Pi run a massive grid of initial conditions to find "islands of stability" or chaotic transitions.
+| Idea | Why the Pi suits it | Needs |
+|------|--------------------|-------|
+| Scheduled data pull and ETL into SQLite (hourly API poll) | Always on, I/O bound | Scheduler column, append-only SQLite |
+| Regime-shift detector (CUSUM or Bayesian change-point) on a polled series | Needs 24/7 listening; store state per timestamp for a long-term state map | Scheduler, state table |
+| MCMC posterior updates (PyMC / NUTS every few hours on the last 30 days) | CPU-heavy, no GPU, runs unattended | Subprocess + timeout, RAM check on the Pi, trace summary written to `model_metadata` |
+| Symbolic regression "formula finder" with `gplearn` (see `docs/knowledge/Symbolic_Regression.md`) | Genetic programming is iterative; a run can take many hours | Subprocess + timeout, checkpoint results to disk |
+| Differential-equation parameter sweep (grid of initial conditions, look for stable islands and chaotic transitions) | Embarrassingly parallel, set and forget | Subprocess, result file, optional pool |
+| Distributed hyperparameter tuning (Optuna worker, shared RDB backend) | Pi as a secondary trial worker | Network-reachable RDB, long subprocess |
+| Polite web scraping for a corpus (rate-limited, `BeautifulSoup`/`Scrapy`) | Slow by design, I/O bound | Scheduler, robots/terms check |
+| Literature knowledge graph (arXiv/PubMed metadata, NetworkX centrality, rankings in SQL) | Scraping is rate-limited, graph metrics can be computed incrementally | Scheduler, SQLite, subprocess |
 
+## Cross-cutting needs these ideas expose
 
-### Database Population & ETL Pipelines
-* **The Task:** Set up a cron job that runs a Python script every hour to pull data from an API (e.g., financial data, weather data) and populate a local SQLitedatabase.
+1. A **Schedule** column and runner support (most Tier B items).
+2. **Subprocess execution with a timeout** (anything over a minute).
+3. **Result files**: write bulky output to `data/` and put the path in the Log. Sheet cells cap at 50,000 characters.
+4. **Failure notification** so unattended jobs do not fail silently.
 
-### B. Markov Chain Monte Carlo (MCMC) Simulations
+## Suggested order
 
-As a math PhD, you likely deal with Bayesian inference.
-
-* **The Task:** Running long-chain MCMC simulations for complex posterior distributions.
-* **Why it fits:** These are often CPU-intensive but can run in the background for 48+ hours without needing the high-end GPU clusters used for Deep Learning.
-* **Library:** `PyMC` or `Stan`.
-
-Instead of a simple forecast, run a script that continuously updates the posterior distribution of a model as new data arrives. This is perfect for the Pi because MCMC (Markov Chain Monte Carlo) sampling is CPU-intensive but doesn't require a GPU.
-
-The Task: Use PyMC to model a complex system (e.g., local housing price trends or pandemic spread via public health APIs).
-
-The Workflow: 1.  I/O: A script polls an API every hour.
-2.  SQL: New data is appended to a SQLite table.
-3.  Compute: Every 6 hours, a script triggers a NUTS (No-U-Turn Sampler) to update the model parameters based on the last 30 days of data.
-4.  Output: Store the trace summaries (mean, HPD intervals) in a model_metadata table.
- 
-
-### 5. The "Knowledge Graph" Synthesizer (NLP & Graph Theory)
-As a researcher, you likely deal with high volumes of literature. The Pi can act as a background librarian that builds a mathematical representation of a research field.
-
-The Task: Scrape metadata and abstracts from arXiv or PubMed for a specific set of keywords.
-
-The Math: Use NetworkX to build a co-citation or keyword graph. Calculate Eigenvector Centrality or PageRank to identify "hidden" influential papers or emerging trends that haven't peaked yet.
-
-Why it fits: Scraping is rate-limited (I/O), and calculating global graph metrics on a growing dataset is computationally "heavy" but can be done iteratively.
-
-Logic: Scrapy -> SQLite (Graph Edges) -> NetworkX (Centrality Metrics) -> SQL (Rankings).
-
-### C. Distributed Hyperparameter Tuning
-
-* **The Task:** If you are building a predictive model on your main PC, use the Pi as a secondary worker node to test a subset of a massive parameter grid.
-* **Why it fits:** While your main machine handles the "heavy" training, the Pi can crunch through the smaller, iterative permutations of a Random Forest or XGBoost model.
-* **Library:** `Optuna` (using a shared RDB database like MySQL to track trials).
-
-### D. Web Scraping & NLP Pre-processing
-
-* **The Task:** Scrape large forums (like Reddit or niche research sites) to build a corpus for sentiment analysis.
-* **Why it takes long:** Rate-limiting. You have to bake in `time.sleep()` calls to avoid IP bans. A script that takes 10 hours because of "politeness" is perfect for a Pi.
-* **Library:** `BeautifulSoup`, `Scrapy`, or `Selenium` (headless).
-
----
+1. `system_health.py` - fills the empty `pulse_monitor.py` slot, no parameters, no risk.
+2. `git_pull_update.py` - turns a manual SSH step into a sheet button.
+3. Fix `docs/improvements.md` items 1-4, then add the Schedule column.
+4. `carbon_intensity.py` or `weather_fetch.py` on a schedule - first real unattended data job.
+5. One Tier B compute job (Monte Carlo sweep first, MCMC later) once subprocess and timeout exist.

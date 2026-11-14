@@ -12,17 +12,16 @@ RaspPi-Remote-Worker/
 │       ├── control_panel.py   # ControlPanel + ScriptStatus (all Sheets I/O)
 │       └── list_sheets.py     # Diagnostic: list sheets the credentials can see
 ├── docs/
-│   ├── Raspberry Pi Remote Worker - Setup & Management.md
-│   ├── scripts/               # One README per script / tool
-│   ├── knowledge/             # Reference notes (BASH, POWERSHELL, Symbolic_Regression)
-│   ├── other/                 # Pi setup, SD card, VS Code SSH, env setup
-│   ├── handy.md, later.md, script_ideas.md
-│   └── notes.md               # gitignored scratch
+│   ├── setup.md               # Setup, service, helper script, troubleshooting
+│   ├── scripts.md             # Runner, sheet layout, ControlPanel API, writing scripts
+│   ├── script_ideas.md        # Script backlog (ideas)
+│   ├── improvements.md        # Review findings (proposed)
+│   ├── knowledge/             # Symbolic_Regression, SD_CARD_FORMAT
+│   └── notes.md               # gitignored scratch (private; do not read or copy)
 ├── setup_initial.sh           # Pi first-time setup
 ├── setup_systemd.sh           # Pi service install
 ├── raspi-helper.sh            # SSH helper functions (source it)
 ├── pyproject.toml, uv.lock    # Dependencies (uv)
-├── project-overview.md        # Architecture overview (partly TODO)
 ├── README.md
 ├── credentials.json           # SECRET, gitignored
 ├── .raspi-config              # Pi IP, gitignored in practice (do not commit changes)
@@ -36,10 +35,11 @@ RaspPi-Remote-Worker/
 |--------|----------|
 | A task the Pi should run | `scripts/<name>.py` following [SCRIPT_CONTRACT.md](SCRIPT_CONTRACT.md) |
 | Shared Sheets or helper code | `scripts/utils/` |
-| Documentation for a script | `docs/scripts/<NAME>_README.md` |
-| Setup or ops reference | `docs/other/` or the Setup & Management doc |
+| Documentation for a script | a short paragraph in `docs/scripts.md` |
+| Setup or ops reference | `docs/setup.md` |
 | General learning notes | `docs/knowledge/` |
 | A half-formed script idea | `docs/script_ideas.md` |
+| A proposed change to the runner or sheet | `docs/improvements.md` |
 | Pi-side automation | root-level `*.sh`, matching existing setup scripts |
 
 ## Surface area policy

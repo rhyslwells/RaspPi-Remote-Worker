@@ -98,7 +98,7 @@ echo "5. View logs:"
 echo "   journalctl -u remote-worker.service -f"
 echo ""
 echo -e "${BLUE}For more information, see:${NC}"
-echo "  - docs/scripts/SERVICE_README.md (systemd service management)"
+echo "  - docs/setup.md (service management)"
 echo ""
 
 

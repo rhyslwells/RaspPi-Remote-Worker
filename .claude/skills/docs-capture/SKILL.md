@@ -14,9 +14,10 @@ Bring documentation in line with what was actually implemented. Only update what
 
 | Change | Update |
 |--------|--------|
-| New or changed task script | `docs/scripts/<NAME>_README.md` if setup is non-obvious; `.claude/REPOSITORY_STRUCTURE.md` file list |
-| Script contract, status values, sheet columns | `.claude/SCRIPT_CONTRACT.md`, `.claude/ARCHITECTURE.md`, README status table |
-| `setup_*.sh`, systemd, `raspi-helper.sh` | `.claude/DEPLOYMENT.md`, `docs/scripts/SETUP_SH_README.md`, `SERVICE_README.md`, `RASPI_HELPER_SH.md` |
+| New or changed task script | paragraph under "Included scripts" in `docs/scripts.md`; README layout and `.claude/REPOSITORY_STRUCTURE.md` file lists |
+| Script contract, status values, sheet columns, runner behaviour | `docs/scripts.md` and the README status table; `.claude/SCRIPT_CONTRACT.md` rules if they change |
+| `setup_*.sh`, systemd, `raspi-helper.sh` | `docs/setup.md`; `.claude/DEPLOYMENT.md` only if a rule changes |
+| Implemented item from the backlog or review | remove it from `docs/script_ideas.md` / `docs/improvements.md` and document it in `docs/scripts.md` |
 | New dependency | `.claude/CODING_STANDARDS.md`, `.claude/CLAUDE.md` environment section |
 | Fixed a "Known inconsistency" | Remove it from `.claude/CLAUDE.md` and `DOCUMENTATION.md` |
 | Idea only, not built | `docs/script_ideas.md` marked as planned |
@@ -29,7 +30,7 @@ Bring documentation in line with what was actually implemented. Only update what
 - Mermaid for diagrams, no emojis, sentence-case headings
 - No secrets or private details (credentials, key IDs, Pi IP)
 - Do not edit `.claude/CLAUDE.md` without approval, since it is the instruction file
-- Flag stale README / `project-overview.md` links rather than silently rewriting them
+- Say each thing once: link to the doc that owns it instead of copying
 - Use absolute dates, not "today"
 
 ## Output

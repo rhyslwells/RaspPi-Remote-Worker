@@ -10,9 +10,11 @@ Embedded assistant for a small Raspberry Pi task-runner. A systemd service on th
 
 ## Quick Navigation
 
-- [**ARCHITECTURE.md**](ARCHITECTURE.md) - Controller / worker / scripts, status lifecycle, sheet schema, design decisions
-- [**SCRIPT_CONTRACT.md**](SCRIPT_CONTRACT.md) - How to write a task script the runner can execute
-- [**DEPLOYMENT.md**](DEPLOYMENT.md) - Pi setup, systemd service, `raspi-helper.sh`, credentials handling
+Human-facing docs are the source of truth for behaviour and are not repeated here: [README](../README.md), [docs/scripts.md](../docs/scripts.md) (runner, sheet layout, status lifecycle, `ControlPanel` API, script template), [docs/setup.md](../docs/setup.md) (Pi setup, service, helper script), [docs/improvements.md](../docs/improvements.md), [docs/script_ideas.md](../docs/script_ideas.md).
+
+- [**ARCHITECTURE.md**](ARCHITECTURE.md) - Design decisions and their consequences
+- [**SCRIPT_CONTRACT.md**](SCRIPT_CONTRACT.md) - Rules to apply when writing a task script
+- [**DEPLOYMENT.md**](DEPLOYMENT.md) - Safety rules and constraints for anything Pi-facing
 - [**REPOSITORY_STRUCTURE.md**](REPOSITORY_STRUCTURE.md) - Directory layout and where new files go
 - [**CODING_STANDARDS.md**](CODING_STANDARDS.md) - Style, dependencies, logging
 - [**WORKFLOW.md**](WORKFLOW.md) - Develop on Windows, verify, deploy to Pi
@@ -78,8 +80,7 @@ sequenceDiagram
 Report these if relevant to the task; fix only when asked.
 
 - `pyproject.toml` declares `packages = ["src/remote_worker"]`, which does not exist, and lists pandas / numpy / matplotlib that no current script imports.
-- README links `docs/0-project-overview.md` and `docs/phase-*.md`; those files do not exist (real docs: `docs/Raspberry Pi Remote Worker - Setup & Management.md`, `docs/scripts/`, `docs/other/`).
-- README describes `runner.py` at the repo root; it is in `scripts/`.
+- The live Config sheet has a `Description` column and a `runner.py` row that the code does not know about; the full list of review findings is in `docs/improvements.md`.
 - Spreadsheet name is spelled `RaspPI-Remote-Worker` in code (capital I) in `runner.py`, `test_connection.py`, `prime_hunter.py`.
 - Install path differs: `setup_systemd.sh` uses `~/Desktop/RaspPi-Remote-Worker`, `raspi-helper.sh` uses `~/RaspPi-Remote-Worker`.
 - `credentials.json` is loaded relative to the working directory, so scripts and the service must run from the repo root.
