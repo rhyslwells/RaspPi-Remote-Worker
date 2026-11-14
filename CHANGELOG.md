@@ -2,6 +2,12 @@
 
 Version lives in `pyproject.toml` (`version = "..."`). Newest first. Bump rules are in [docs/scripts.md](docs/scripts.md#versioning).
 
+## 0.3.0 - 2026-11-14
+
+- Added per-script SQLite databases (`data/<script>.db`, gitignored) via `scripts/utils/script_db.py` (standard library only). The runner now records every execution (parameters, success, message, details, duration) in the script's `runs` table. Scripts can add their own tables with `connect()`.
+- Added `scripts/db_report.py`: lists the databases, or shows the latest runs for one script. Runs from the sheet (`Parameter-1` = script, `Parameter-2` = row limit) or from the command line.
+- Runner change: needs a service restart after the update. Recording is best effort and never changes a script's result.
+
 ## 0.2.0 - 2026-11-14
 
 - Added `scripts/git_pull_update.py`: update the Pi from a Config sheet cell (pull, `uv sync` if dependencies changed, "restart needed" report). Works when the service PATH lacks `git`.

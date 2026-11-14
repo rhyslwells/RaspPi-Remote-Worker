@@ -105,6 +105,10 @@ Notes: run from the repo root so `credentials.json` is found; keep scripts short
 
 **`git_pull_update.py`** - updates the Pi from the sheet. Runs `git pull --ff-only` in the repo, runs `uv sync --locked` if `pyproject.toml` or `uv.lock` changed, and reports the version change and changed files, e.g. `Updated v0.2.0 -> v0.3.0 (abc1234 -> def5678, 4 files)`, or `Already up to date (v0.3.0)`. If `runner.py` or `utils/` changed, the message adds "restart needed"; the script never restarts the service itself (that would kill the runner before it records the result). Fails cleanly, changing nothing, if the Pi has local edits or has diverged from GitHub; fails with "uv sync failed" if `uv.lock` was not updated for the new version (see Versioning). No parameters. Tested on scratch repos with the real `uv`, not yet on the Pi.
 
+**`db_report.py`** - reads the per-script SQLite databases in `data/`. With `Parameter-1` blank it lists every database with its run count and last run; with a script name (e.g. `prime_hunter`) it shows the newest `Parameter-2` runs (default 20, max 200) with parameters, result, message and details (each clipped to 200 characters), plus the names and row counts of any extra tables the script created. From the command line: `python scripts/db_report.py [script] [--limit N]`.
+
+**`utils/script_db.py`** - not a task. After every run the runner writes one row to the `runs` table of `data/<script>.db` (start time, duration, success, parameters as JSON, message, details); the file is created on the first run. A script can keep its own data too: `with connect("my_task") as db: db.execute("CREATE TABLE IF NOT EXISTS ...")`. Recording never raises and never changes the script's result. The `data/` folder is gitignored, so it is not touched by `git pull`; it is not backed up either, so copy the `.db` files off the Pi if they matter.
+
 **`utils/list_sheets.py`** - lists every spreadsheet the credentials can see; useful when `Could not find spreadsheet` appears.
 
 `pulse_monitor.py` and `other-ideas.py` are notes, not scripts. See [script_ideas.md](script_ideas.md).

@@ -1,5 +1,6 @@
 # ## B. The "Pulse" (Connectivity)
 
+we might want to save the output as a Pi Health Report sheet in the Google Sheet
 # A script using `smtplib` to send a summary of the Pi's system health (CPU temp, disk space) every hour.
 
 # **Why:** Leverages the Pi's "always-on" nature.

@@ -6,11 +6,13 @@ RaspPi-Remote-Worker/
 │   ├── runner.py              # Polling loop, dynamic script loader (service entry point)
 │   ├── test_connection.py     # Sheet connectivity check (special-cased in runner)
 │   ├── prime_hunter.py        # Example parameterised task
+│   ├── db_report.py           # Reports contents of data/*.db (sheet task + CLI)
 │   ├── git_pull_update.py     # Pi self-update (pull, uv sync, restart-needed report); no ControlPanel
 │   ├── pulse_monitor.py       # Notes for a future health-check script (not runnable)
 │   ├── other-ideas.py         # Notes for future scripts (not runnable)
 │   └── utils/
 │       ├── control_panel.py   # ControlPanel + ScriptStatus (all Sheets I/O)
+│       ├── script_db.py       # Per-script SQLite DBs (stdlib); runner records each run here
 │       └── list_sheets.py     # Diagnostic: list sheets the credentials can see
 ├── docs/
 │   ├── setup.md               # Setup, service, helper script, troubleshooting
@@ -28,6 +30,7 @@ RaspPi-Remote-Worker/
 ├── credentials.json           # SECRET, gitignored
 ├── .raspi-config              # Pi IP for the helper script; currently tracked in git (private-ish, do not edit unasked)
 ├── logs/                      # Runtime logs (gitignored *.log)
+├── data/                      # Per-script SQLite DBs, created at runtime (gitignored)
 └── .claude/                   # This directory
 ```
 

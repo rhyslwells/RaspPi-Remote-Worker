@@ -7,10 +7,12 @@ with START status, managing their complete lifecycle.
 import time
 import sys
 import importlib.util
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from utils.control_panel import ControlPanel, ScriptStatus
+from utils.script_db import record_run
 
 
 def run_script(script_name: str) -> tuple:
@@ -77,6 +79,29 @@ def run_script(script_name: str) -> tuple:
         )
 
 
+def run_and_record(panel: ControlPanel, script_name: str) -> tuple:
+    """
+    Run a script and record the run (parameters, result, duration) in its SQLite DB.
+
+    Recording is best effort and never changes the script's result.
+    """
+    started_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    start = time.monotonic()
+    try:
+        params = panel.get_script_parameters(script_name)
+    except Exception:
+        params = {}
+
+    result = run_script(script_name)
+
+    success, message, details = result
+    record_run(
+        script_name, started_at, time.monotonic() - start,
+        success, params, message, details,
+    )
+    return result
+
+
 def main():
     """Main runner loop."""
     panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
@@ -92,7 +117,7 @@ def main():
                 
                 # Execute with full lifecycle management
                 def execution_func():
-                    return run_script(script_name)
+                    return run_and_record(panel, script_name)
                 
                 panel.execute_script_lifecycle(
                     script_name=script_name,
