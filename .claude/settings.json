@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./credentials.json)",
+      "Read(./.raspi-config)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Edit(./credentials.json)"
+    ]
+  }
+}
