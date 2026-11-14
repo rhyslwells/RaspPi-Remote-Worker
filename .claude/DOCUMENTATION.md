@@ -20,7 +20,7 @@ Docs reflect the implementation, stay concise, and say each thing once.
 
 - Do not write documentation unless the change warrants it. A new script gets a short paragraph in `docs/scripts.md`, not a new file.
 - Before adding text, check whether it already exists elsewhere; link instead of repeating.
-- Mark planned work as planned. `pulse_monitor.py` and `other-ideas.py` are notes, not features.
+- Mark planned work as planned. `other-ideas.py` is a notes file, not a feature.
 - Mermaid for diagrams; no emojis; sentence-case headings.
 - No secrets or private details: no credentials, key IDs, passwords, Wi-Fi names, account emails, or the Pi's IP or login name. Use `<pi-ip>` and `<pi-user>`.
 - `docs/notes.md` is gitignored scratch and may hold private details; never copy from it.

@@ -9,7 +9,7 @@ RaspPi-Remote-Worker/
 │   ├── restart_pi.py          # Schedules a service restart or Pi reboot via sudo + systemd
 │   ├── db_report.py           # Reports contents of data/*.db (sheet task + CLI)
 │   ├── git_pull_update.py     # Pi self-update (pull, uv sync, restart-needed report); no ControlPanel
-│   ├── pulse_monitor.py       # Notes for a future health-check script (not runnable)
+│   ├── pulse_monitor.py       # Pi health samples (SQLite + "System Health" tab); repeats via a transient systemd timer
 │   ├── other-ideas.py         # Notes for future scripts (not runnable)
 │   └── utils/
 │       ├── control_panel.py   # ControlPanel + ScriptStatus (all Sheets I/O)

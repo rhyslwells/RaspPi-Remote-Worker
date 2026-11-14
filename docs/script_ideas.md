@@ -15,7 +15,6 @@ Constraints for all: ARM CPU, limited RAM, no GPU. Prefer the standard library; 
 
 | Script | What it does | Parameters | Notes |
 |--------|--------------|------------|-------|
-| `system_health.py` | CPU temperature, load, memory, disk, uptime, throttling flags into the Log row. Replaces the `pulse_monitor.py` notes | none | CPU temp from `/sys/class/thermal/thermal_zone0/temp`, `vcgencmd get_throttled`; `psutil` optional. Good first script: instant, safe |
 | `network_check.py` | Ping gateway and a public host, report public IP and DNS result | hosts | Useful when the Pi drops off the network |
 | `log_cleanup.py` | Rotate or delete old files in `logs/` | days to keep | Keeps the SD card from filling; dry-run parameter first |
 | `sheet_backup.py` | Export Config and Log to CSV under `data/` | none | Cheap insurance against sheet edits |
@@ -55,7 +54,6 @@ Check API terms and rate limits before relying on any external source.
 
 ## Suggested order
 
-1. `system_health.py` - fills the empty `pulse_monitor.py` slot, no parameters, no risk.
-2. Fix `docs/improvements.md` items 1-4, then add the Schedule column.
-3. `carbon_intensity.py` or `weather_fetch.py` on a schedule - first real unattended data job.
+1. Fix `docs/improvements.md` items 1-4, then add the Schedule column. `pulse_monitor.py` (done) repeats through its own systemd timer today; a Schedule column would replace that special case.
+2. `carbon_intensity.py` or `weather_fetch.py` on a schedule - first real unattended data job.
 

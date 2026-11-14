@@ -2,6 +2,11 @@
 
 Version lives in `pyproject.toml` (`version = "..."`). Newest first. Bump rules are in [docs/scripts.md](docs/scripts.md#versioning).
 
+## 0.5.0 - 2026-11-14
+
+- Implemented `scripts/pulse_monitor.py` (was a notes file): snapshot of CPU temperature, load, memory, disk, uptime and power/throttle flags, saved to `data/pulse_monitor.db` and appended to a new `System Health` tab in the sheet. Standard library only, no new dependency.
+- `Parameter-1` = interval in minutes: blank takes one sample, `N` starts a background sample every N minutes (transient systemd timer via sudo, so the runner is not blocked), `0` stops it. `Parameter-2` = max CPU temperature, `Parameter-3` = min free disk %. A breach returns FAILED "Health warning" (single sample) or writes a FAILED row to the Log tab (scheduled).
+
 ## 0.4.0 - 2026-11-14
 
 - Added `scripts/restart_pi.py`: restart the runner service (default) or reboot the Pi from a Config sheet cell (`Parameter-1` = `service` or `reboot`). The restart is scheduled via systemd so the script can still report SUCCESS first. Needs passwordless sudo for the service user.

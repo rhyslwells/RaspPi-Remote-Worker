@@ -63,7 +63,7 @@ The script's `main()` returned `None`. It must return `(success, message, detail
 
 ### Can I run a script on a schedule?
 
-Not yet. Every run needs a `START`. A `Schedule` column is the top proposal in [improvements.md](improvements.md).
+Not generally: every run needs a `START`. A `Schedule` column is the top proposal in [improvements.md](improvements.md). The exception is `pulse_monitor.py`, which sets up its own systemd timer when `Parameter-1` is a number of minutes ([scripts.md](scripts.md#included-scripts)); it stops with `0` and does not survive a Pi reboot.
 
 ### Can two scripts run at once?
 

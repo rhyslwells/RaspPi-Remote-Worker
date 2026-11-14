@@ -16,6 +16,7 @@ Controller (Google Sheet) -> worker (`scripts/runner.py` under systemd) -> task 
 - **systemd owns persistence**: `Restart=always`, `RestartSec=10`, output to `logs/service.log`.
 - **Run history lives in SQLite, one file per script** (`data/<script>.db`, stdlib `sqlite3` via `scripts/utils/script_db.py`). The runner records every run in `run_and_record`; scripts add their own tables with `connect()`. The sheet stays the controller and the short-term view; the databases are the durable record. Recording is best effort: a database error is logged and never changes the script's result.
 - **A script cannot restart its own runner inline.** `restart_pi.py` schedules the restart (`systemd-run --on-active` or `shutdown -r +1`) and returns first, so SUCCESS is recorded. Do the same for any script that stops or restarts the service.
+- **Repeating work must not loop inside the runner** (single-threaded, no timeout: it would block every other script). Until a runner-level Schedule exists, `pulse_monitor.py` installs a transient systemd timer (`systemd-run --on-unit-active`, run as the service user, `AccuracySec=1s`) that calls the script with `--sample`. It does not survive a reboot. A Schedule column in the runner would replace this special case.
 
 ## Consequences to keep in mind
 
