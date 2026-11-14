@@ -24,7 +24,7 @@ Findings from a code review of `scripts/runner.py` and `scripts/utils/control_pa
 
 1. **Scheduling.** Today every run needs a human to type `START`. Add a `Schedule` column (for example `every 1h` or a cron string) and let the runner set `START` when due. This unlocks monitoring and ETL scripts, and is the biggest single upgrade.
 2. **Failure notification.** Email or push on `FAILED`, so a nightly job failing is noticed without opening the sheet.
-3. **Update-from-sheet.** A `git_pull_update` task (see `docs/script_ideas.md`).
+3. **Self-restart after update.** `git_pull_update.py` reports "restart needed" but cannot restart the service safely from inside the runner. Once stuck-`RUNNING` recovery (item 2 above) exists, the runner could restart itself after recording the result.
 4. **Concurrency.** Subprocess per script with a timeout, optionally a worker pool. Required for any long-running idea in `docs/script_ideas.md` (tier B).
 5. **Per-script output file.** Capture stdout/stderr per run under `logs/<script>/<timestamp>.log` and put the path in the Log row.
 

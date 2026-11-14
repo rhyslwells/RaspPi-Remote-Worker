@@ -9,6 +9,7 @@ Docs reflect the implementation, stay concise, and say each thing once.
 | `README.md` | Overview, how it works, status table, quick start, layout, doc index |
 | `docs/setup.md` | Google Cloud, Pi setup, install, service commands, helper script, troubleshooting |
 | `docs/scripts.md` | Runner behaviour, sheet layout, status lifecycle, `ControlPanel` API, script template, included scripts |
+| `docs/faq.md` | Short answers to recurring questions; link to the owning doc instead of repeating it. Add a Q&A when the user asks something that was already answered |
 | `docs/script_ideas.md` | Backlog of scripts, marked as ideas |
 | `docs/improvements.md` | Review findings and proposed changes, marked as proposed |
 | `docs/knowledge/` | General reference notes unrelated to the code path |

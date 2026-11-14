@@ -6,6 +6,7 @@ RaspPi-Remote-Worker/
 │   ├── runner.py              # Polling loop, dynamic script loader (service entry point)
 │   ├── test_connection.py     # Sheet connectivity check (special-cased in runner)
 │   ├── prime_hunter.py        # Example parameterised task
+│   ├── git_pull_update.py     # Pi self-update (pull, uv sync, restart-needed report); no ControlPanel
 │   ├── pulse_monitor.py       # Notes for a future health-check script (not runnable)
 │   ├── other-ideas.py         # Notes for future scripts (not runnable)
 │   └── utils/

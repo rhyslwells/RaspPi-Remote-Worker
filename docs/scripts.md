@@ -103,6 +103,8 @@ Notes: run from the repo root so `credentials.json` is found; keep scripts short
 
 **`prime_hunter.py`** - finds primes between `Parameter-1` and `Parameter-2` (inclusive). Returns "Found N primes between A and B" with the list in `details`. Fails with "Missing parameters" if fewer than two are set. Large ranges are slow (trial division) and can exceed the cell limit.
 
+**`git_pull_update.py`** - updates the Pi from the sheet. Runs `git pull --ff-only` in the repo, runs `uv sync` if `pyproject.toml` or `uv.lock` changed, and reports the changed files. If `runner.py` or `utils/` changed, the message says "restart needed"; the script never restarts the service itself (that would kill the runner before it records the result). Fails cleanly, changing nothing, if the Pi has local edits or has diverged from GitHub. No parameters. The `uv sync` path has not been exercised yet.
+
 **`utils/list_sheets.py`** - lists every spreadsheet the credentials can see; useful when `Could not find spreadsheet` appears.
 
 `pulse_monitor.py` and `other-ideas.py` are notes, not scripts. See [script_ideas.md](script_ideas.md).

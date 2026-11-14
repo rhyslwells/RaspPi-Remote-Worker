@@ -72,6 +72,16 @@ python3 scripts/runner.py
 
 ## 6. Updating
 
+The Pi does not update itself: push to GitHub first, then use any one of these.
+
+| Method | How | Restarts the service? |
+|--------|-----|-----------------------|
+| From the sheet | Set `git_pull_update.py` to `START` in `Config` (add the row once) | No; the result says "restart needed" when `runner.py` or `utils/` changed |
+| From your PC | `update_raspi_repo` (helper script, below) | Yes |
+| On the Pi | the commands below | Yes |
+
+Manual commands:
+
 ```bash
 cd ~/Desktop/RaspPi-Remote-Worker
 git pull origin main

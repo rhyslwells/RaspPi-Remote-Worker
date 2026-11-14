@@ -1,6 +1,6 @@
 # Script ideas
 
-Backlog of scripts to try on the Pi. Status of everything here: **idea, not implemented** unless marked otherwise. Implemented today: `test_connection.py`, `prime_hunter.py`.
+Backlog of scripts to try on the Pi. Status of everything here: **idea, not implemented** unless marked otherwise. Implemented today: `test_connection.py`, `prime_hunter.py`, `git_pull_update.py`.
 
 ## How ideas are tiered
 
@@ -16,7 +16,6 @@ Constraints for all: ARM CPU, limited RAM, no GPU. Prefer the standard library; 
 | Script | What it does | Parameters | Notes |
 |--------|--------------|------------|-------|
 | `system_health.py` | CPU temperature, load, memory, disk, uptime, throttling flags into the Log row. Replaces the `pulse_monitor.py` notes | none | CPU temp from `/sys/class/thermal/thermal_zone0/temp`, `vcgencmd get_throttled`; `psutil` optional. Good first script: instant, safe |
-| `git_pull_update.py` | `git pull`, `uv sync`, report what changed | optional branch | Do not restart the service from inside itself; report "restart needed" or use a detached `systemctl restart`. Pulls on the Pi only; be careful about repos synced to the laptop |
 | `network_check.py` | Ping gateway and a public host, report public IP and DNS result | hosts | Useful when the Pi drops off the network |
 | `log_cleanup.py` | Rotate or delete old files in `logs/` | days to keep | Keeps the SD card from filling; dry-run parameter first |
 | `sheet_backup.py` | Export Config and Log to CSV under `data/` | none | Cheap insurance against sheet edits |
@@ -57,7 +56,6 @@ Check API terms and rate limits before relying on any external source.
 ## Suggested order
 
 1. `system_health.py` - fills the empty `pulse_monitor.py` slot, no parameters, no risk.
-2. `git_pull_update.py` - turns a manual SSH step into a sheet button.
-3. Fix `docs/improvements.md` items 1-4, then add the Schedule column.
-4. `carbon_intensity.py` or `weather_fetch.py` on a schedule - first real unattended data job.
-5. One Tier B compute job (Monte Carlo sweep first, MCMC later) once subprocess and timeout exist.
+2. Fix `docs/improvements.md` items 1-4, then add the Schedule column.
+3. `carbon_intensity.py` or `weather_fetch.py` on a schedule - first real unattended data job.
+

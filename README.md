@@ -59,6 +59,7 @@ scripts/
   utils/list_sheets.py     lists sheets the credentials can see
   test_connection.py       checks sheet access
   prime_hunter.py          example task with parameters
+  git_pull_update.py       pulls the latest code on the Pi from a sheet cell
   pulse_monitor.py, other-ideas.py   notes for future scripts (not runnable)
 docs/                  setup, reference, ideas, improvements
 setup_initial.sh       Pi first-time install
@@ -75,6 +76,7 @@ logs/                  runtime logs (generated)
 |-----|----------|
 | [docs/setup.md](docs/setup.md) | Google Cloud, flashing and connecting to the Pi, install, service management, helper script, troubleshooting |
 | [docs/scripts.md](docs/scripts.md) | Runner behaviour, sheet layout, `ControlPanel` API, writing scripts, the included scripts |
+| [docs/faq.md](docs/faq.md) | Quick answers: does the Pi auto-update, what needs a restart, stuck rows |
 | [docs/script_ideas.md](docs/script_ideas.md) | Backlog of scripts to try (ideas, not implemented) |
 | [docs/improvements.md](docs/improvements.md) | Review findings and proposed changes (not implemented) |
 | [docs/knowledge/](docs/knowledge/) | Reference notes: symbolic regression, SD card recovery on Windows |
