@@ -20,6 +20,15 @@
 - Changes to the items under "Ask before changing" in [CLAUDE.md](CLAUDE.md) get a short proposal first.
 - A change that touches the sheet layout, status enum or script contract also affects the live sheet and every script: list what else must change.
 
+## Versioning
+
+The version is `pyproject.toml` `version`; history is `CHANGELOG.md`; the rules and steps are in `docs/scripts.md#versioning`. The user wants it incremented whenever a change is going to be pushed to the Pi.
+
+- When finishing a change that is meant to be committed or pushed (anything beyond a trivial docs typo), propose the bump level (patch: fix/tweak; minor: new script, new runner or sheet behaviour, or anything needing a restart) and apply it together with a `CHANGELOG.md` entry.
+- Always run `uv lock` after changing `version`. `uv.lock` records the project version, and `git_pull_update.py` runs `uv sync --locked`, so a stale lock makes the Pi update fail.
+- The README header also states the version; update it in the same commit.
+- Commit and push only when asked; the bump itself is part of the change, not a separate step.
+
 ## Git
 
 - Branch is `main`; the Pi pulls `origin main`, so a push is effectively a deploy. Only commit or push when asked.

@@ -22,7 +22,8 @@ RaspPi-Remote-Worker/
 ├── setup_initial.sh           # Pi first-time setup
 ├── setup_systemd.sh           # Pi service install
 ├── raspi-helper.sh            # SSH helper functions (source it)
-├── pyproject.toml, uv.lock    # Dependencies (uv)
+├── pyproject.toml, uv.lock    # Dependencies (uv) and the project version; lock must match the version
+├── CHANGELOG.md               # One entry per version
 ├── README.md
 ├── credentials.json           # SECRET, gitignored
 ├── .raspi-config              # Pi IP for the helper script; currently tracked in git (private-ish, do not edit unasked)

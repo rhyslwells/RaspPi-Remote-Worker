@@ -161,7 +161,9 @@ update_raspi_repo() {
     ssh $PI_USER@"$PI_IP" "cd ~/Desktop/RaspPi-Remote-Worker && git pull origin main && source .venv/bin/activate && uv sync && sudo systemctl restart remote-worker.service"
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}Update complete! Service restarted.${NC}"
+        local version
+        version=$(ssh $PI_USER@"$PI_IP" "grep -m1 '^version' ~/Desktop/RaspPi-Remote-Worker/pyproject.toml" 2>/dev/null | cut -d'"' -f2)
+        echo -e "${GREEN}Update complete! Service restarted. Pi is now on v${version:-unknown}.${NC}"
     else
         echo -e "${RED}Update failed. Check logs with: watch_raspi_logs${NC}"
     fi

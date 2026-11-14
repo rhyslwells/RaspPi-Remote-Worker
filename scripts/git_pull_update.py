@@ -11,12 +11,14 @@ No parameters.
 """
 
 import os
+import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+VERSION_PATTERN = re.compile(r'^version\s*=\s*"([^"]+)"', re.MULTILINE)
 DEPENDENCY_FILES = ("pyproject.toml", "uv.lock")
 RESTART_PREFIXES = ("scripts/runner.py", "scripts/utils/")
 MAX_LISTED_FILES = 40
@@ -48,6 +50,15 @@ def _find_uv() -> str | None:
     return shutil.which("uv", path=_search_path())
 
 
+def _read_version() -> str:
+    try:
+        text = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    except OSError:
+        return "unknown"
+    match = VERSION_PATTERN.search(text)
+    return match.group(1) if match else "unknown"
+
+
 def main():
     """
     Returns:
@@ -58,14 +69,20 @@ def main():
         if head.returncode != 0:
             return (False, "Not a git repository", head.stderr.strip())
         old_sha = head.stdout.strip()
+        old_version = _read_version()
 
         pull = _git("pull", "--ff-only", timeout=120)
         if pull.returncode != 0:
             return (False, "git pull failed", (pull.stderr or pull.stdout).strip())
 
         new_sha = _git("rev-parse", "HEAD").stdout.strip()
+        new_version = _read_version()
         if new_sha == old_sha:
-            return (True, "Already up to date", f"HEAD at {new_sha[:7]}")
+            return (
+                True,
+                f"Already up to date (v{new_version})",
+                f"HEAD at {new_sha[:7]}",
+            )
 
         diff = _git("diff", "--name-only", old_sha, new_sha)
         changed = diff.stdout.split()
@@ -75,16 +92,29 @@ def main():
             uv = _find_uv()
             if uv is None:
                 return (False, "Pulled, but uv not found", "Run `uv sync` manually")
-            sync = _run([uv, "sync"], timeout=600)
+            # --locked never rewrites uv.lock, so a stale lock fails loudly
+            # instead of dirtying the checkout and breaking the next pull
+            sync = _run([uv, "sync", "--locked"], timeout=600)
             if sync.returncode != 0:
-                return (False, "Pulled, but uv sync failed", sync.stderr.strip()[-1500:])
+                return (
+                    False,
+                    "Pulled, but uv sync failed (run `uv lock` and push?)",
+                    sync.stderr.strip()[-1500:],
+                )
             notes.append("Dependencies synced")
 
         restart_needed = any(f.startswith(RESTART_PREFIXES) for f in changed)
         if restart_needed:
             notes.append("RESTART NEEDED: runner or ControlPanel changed")
 
-        message = f"Updated {old_sha[:7]} -> {new_sha[:7]} ({len(changed)} files)"
+        if new_version == old_version:
+            version_text = f"v{new_version} (version not bumped)"
+        else:
+            version_text = f"v{old_version} -> v{new_version}"
+        message = (
+            f"Updated {version_text} "
+            f"({old_sha[:7]} -> {new_sha[:7]}, {len(changed)} files)"
+        )
         if restart_needed:
             message += ", restart needed"
 

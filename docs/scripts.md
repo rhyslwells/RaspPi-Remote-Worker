@@ -103,11 +103,30 @@ Notes: run from the repo root so `credentials.json` is found; keep scripts short
 
 **`prime_hunter.py`** - finds primes between `Parameter-1` and `Parameter-2` (inclusive). Returns "Found N primes between A and B" with the list in `details`. Fails with "Missing parameters" if fewer than two are set. Large ranges are slow (trial division) and can exceed the cell limit.
 
-**`git_pull_update.py`** - updates the Pi from the sheet. Runs `git pull --ff-only` in the repo, runs `uv sync` if `pyproject.toml` or `uv.lock` changed, and reports the changed files. If `runner.py` or `utils/` changed, the message says "restart needed"; the script never restarts the service itself (that would kill the runner before it records the result). Fails cleanly, changing nothing, if the Pi has local edits or has diverged from GitHub. No parameters. The `uv sync` path has not been exercised yet.
+**`git_pull_update.py`** - updates the Pi from the sheet. Runs `git pull --ff-only` in the repo, runs `uv sync --locked` if `pyproject.toml` or `uv.lock` changed, and reports the version change and changed files, e.g. `Updated v0.2.0 -> v0.3.0 (abc1234 -> def5678, 4 files)`, or `Already up to date (v0.3.0)`. If `runner.py` or `utils/` changed, the message adds "restart needed"; the script never restarts the service itself (that would kill the runner before it records the result). Fails cleanly, changing nothing, if the Pi has local edits or has diverged from GitHub; fails with "uv sync failed" if `uv.lock` was not updated for the new version (see Versioning). No parameters. Tested on scratch repos with the real `uv`, not yet on the Pi.
 
 **`utils/list_sheets.py`** - lists every spreadsheet the credentials can see; useful when `Could not find spreadsheet` appears.
 
 `pulse_monitor.py` and `other-ideas.py` are notes, not scripts. See [script_ideas.md](script_ideas.md).
+
+## Versioning
+
+The version is `version = "..."` in `pyproject.toml`; the history is in [CHANGELOG.md](../CHANGELOG.md). The update message from `git_pull_update.py` and `update_raspi_repo` shows it, so you can see what the Pi is on.
+
+Bump it with every change you push to the Pi (a typo fix in the docs does not need one):
+
+| Change | Bump | Example |
+|--------|------|---------|
+| Fix, tweak, docs that matter | patch | 0.2.0 -> 0.2.1 |
+| New script, new runner or sheet behaviour, anything needing a service restart or a sheet change | minor | 0.2.1 -> 0.3.0 |
+| You decide it is stable | major | 0.x -> 1.0.0 |
+
+Steps, in one commit:
+
+1. Edit `version` in `pyproject.toml`.
+2. Add an entry at the top of `CHANGELOG.md` (date, what changed, any manual step such as "restart the service").
+3. Run `uv lock`. `uv.lock` records the project version, and a stale lock makes `uv sync --locked` fail on the Pi.
+4. Commit, push, then update the Pi.
 
 ## Monitoring
 

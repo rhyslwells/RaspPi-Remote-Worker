@@ -18,6 +18,14 @@ No, on purpose: restarting from inside the runner would kill it before it could 
 
 The systemd unit sets `PATH` to the venv's `bin` only, so the runner cannot see `/usr/bin/git`. The script now searches `/usr/local/bin`, `/usr/bin` and `/bin` as a fallback. Any new script that shells out to a system tool has the same limit: use the full path or the same fallback. To fix it for every script, add `/usr/bin:/bin` to the `PATH` in `setup_systemd.sh` and reinstall the unit (a systemd change; ask first).
 
+### What version is the Pi on?
+
+The update message shows it (`Updated v0.2.0 -> v0.3.0 ...` or `Already up to date (v0.3.0)`), and `update_raspi_repo` prints it. On the Pi: `grep -m1 '^version' pyproject.toml`. History is in [CHANGELOG.md](../CHANGELOG.md); how to bump is in [scripts.md](scripts.md#versioning). Note this is the version of the code on disk; the running service only picks up `runner.py` and `utils/` changes after a restart.
+
+### Why did the update say "uv sync failed (run `uv lock` and push?)"?
+
+The version was bumped in `pyproject.toml` but `uv.lock` was not regenerated. The pull succeeded and the Pi's checkout is untouched. On your PC run `uv lock`, commit `uv.lock`, push, and run the update again.
+
 ### Why else might `git_pull_update.py` fail?
 
 `git pull failed` with "local changes would be overwritten" means someone edited files on the Pi; with "Not possible to fast-forward" the Pi has commits GitHub does not. The script changes nothing in either case. Fix on the Pi by hand (`git status`).
