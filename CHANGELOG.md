@@ -2,6 +2,14 @@
 
 Version lives in `pyproject.toml` (`version = "..."`). Newest first. Bump rules are in [docs/scripts.md](docs/scripts.md#versioning).
 
+## 0.7.1 - 2026-11-15
+
+- Grid dashboard: the region selector moved out of the header into the pages that use it (Overview, Prices, and above the price chart on History). It is one shared choice, remembered in the browser. Generation, Status and Glossary no longer show one.
+- Regional page: a date range picker limited to the days stored (opens on the newest 7 days; a single day is allowed) replaces the day buttons and calendar. Period averages are tiles above the chart, as on Overview. It has its own Southern or Northern Scotland choice. The empty state shows a message instead of a blank chart, and the controls line up.
+- History only offers date ranges the stored daily history can fill, plus "All (N days)", instead of always listing 90 days and 1 year.
+- Prices: removed the negative-prices-per-day chart.
+- Dashboard only: no collector, schema or timer changes, no new dependencies, no service restart needed.
+
 ## 0.7.0 - 2026-11-15
 
 - Grid dashboard: dark mode switch (remembered per browser), one-line overview tiles, dates on the Agile and price time axes, a collapsed "About this chart" box on every chart, a Glossary page, a searchable region dropdown (names only), a navbar that follows the theme, and dark hover labels. The weekday heatmap on Prices is now a typical weekday and weekend line chart. The Status page no longer shows CPU temperature.

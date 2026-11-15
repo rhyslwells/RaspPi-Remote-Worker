@@ -14,10 +14,11 @@ dash.register_page(__name__, path="/", name="Overview", order=0)
 
 layout = html.Div(
     [
+        components.region_select("Agile region"),
         dbc.Row(id="ov-tiles"),
         html.H5(id="ov-agile-title", className="mt-2"),
         components.info(
-            "Half-hourly **Octopus Agile** unit prices for the region chosen at the top right, "
+            "Half-hourly **Octopus Agile** unit prices for the region selected above, "
             "including VAT, for every slot Octopus has published (usually until tomorrow night)."
             "\n\n"
             "- **Green bars**: the cheapest 2 hours in a row (4 slots).\n"

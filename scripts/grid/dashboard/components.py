@@ -4,10 +4,48 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from dash import dcc, html
 
+from grid.collector import config
+
 NOTE_METERED = (
     "Metered generation: transmission-connected plants and interconnectors "
     "(rooftop solar and embedded wind sit outside it)."
 )
+
+
+REGION_OPTIONS = [
+    # "search" is the text the dropdown matches typed input against.
+    {"label": name, "value": code, "search": f"{name} {code}"}
+    for code, name in config.REGION_NAMES.items()
+]
+
+
+def region_select(
+    label: str = "Region", component_id: str = "region", regions=None, className: str = "mb-2"
+) -> html.Div:
+    """
+    In-page region dropdown. The Agile pages share the id "region" (only one page is shown at a
+    time, and browser persistence under that id shares the choice between them). `regions` limits
+    the choices to some region letters.
+    """
+    options = [o for o in REGION_OPTIONS if regions is None or o["value"] in regions]
+    default = config.DEFAULT_REGION if config.DEFAULT_REGION in {o["value"] for o in options} else options[0]["value"]
+    return html.Div(
+        [
+            html.Label(label, className="small text-muted me-2 mb-0"),
+            dcc.Dropdown(
+                id=component_id,
+                options=options,
+                value=default,
+                clearable=False,
+                searchable=True,
+                placeholder="Search regions",
+                persistence=True,
+                persistence_type="local",
+                className="region-select",
+            ),
+        ],
+        className=f"d-flex align-items-center {className}".strip(),
+    )
 
 
 def tile(label: str, value: str, sub: str = "", colour: str = "") -> dbc.Col:

@@ -15,7 +15,7 @@ Shown in **p/kWh including VAT**. Agile prices are set per distribution region (
 
 **Region (A to P)**
 One of the 14 electricity distribution regions in Great Britain. It only affects **Agile prices**
-(the region selector at the top right). Generation, demand and system price are the same for all of GB.
+(the region selector on the Overview, Prices, Regional and History pages). Generation, demand and system price are the same for all of GB.
 
 **System price (imbalance price)**
 The price at which Elexon settles imbalances: the cost of balancing supply and demand

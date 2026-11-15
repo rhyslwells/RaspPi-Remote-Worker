@@ -37,13 +37,6 @@ app = Dash(
 )
 server = app.server  # gunicorn entry point
 
-REGION_OPTIONS = [
-    # "search" is the text the dropdown matches typed input against.
-    {"label": name, "value": code, "search": f"{name} {code}"}
-    for code, name in config.REGION_NAMES.items()
-]
-
-
 def _navbar():
     links = [
         dbc.NavLink(p["name"], href=p["path"], active="exact")
@@ -64,17 +57,6 @@ def _navbar():
                             persistence=True,
                             persistence_type="local",
                             className="mb-0",
-                        ),
-                        dcc.Dropdown(
-                            id="region",
-                            options=REGION_OPTIONS,
-                            value=config.DEFAULT_REGION,
-                            clearable=False,
-                            searchable=True,
-                            placeholder="Search regions",
-                            persistence=True,
-                            persistence_type="local",
-                            className="region-select",
                         ),
                     ],
                     className="d-flex align-items-center flex-wrap gap-2",

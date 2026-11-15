@@ -5,7 +5,8 @@ body { background: #f6f7f9; }
 .tile-sub { font-size: 0.78rem; color: var(--bs-secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .footer { font-size: 0.75rem; color: var(--bs-secondary-color); padding: 1.5rem 0; }
 .navbar-brand { font-weight: 600; }
-.region-select { min-width: 220px; }
+.region-select, .control-box { width: 17rem; max-width: 100%; }
+.control-box .dash-datepicker { width: 100%; }
 
 /* collapsed "About this chart" boxes */
 .info-box { font-size: 0.85rem; color: var(--bs-secondary-color); }
@@ -42,7 +43,7 @@ body { background: #f6f7f9; }
 
 @media (max-width: 576px) {
   .tile-value { font-size: 1.3rem; }
-  .region-select { min-width: 100%; }
+  .region-select, .control-box { width: 100%; }
 }
 
 /* Navbar follows the page theme: Flatly's navbar text is white by default. */
@@ -55,3 +56,6 @@ body { background: #f6f7f9; }
 }
 .navbar .nav-link.active { font-weight: 600; text-decoration: underline; text-underline-offset: 0.35em; }
 .navbar .form-check-label { color: var(--bs-body-color); }
+
+/* date pickers: natural width instead of stretching across the row */
+#gen-date { width: 12rem; max-width: 100%; }

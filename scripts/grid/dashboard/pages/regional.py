@@ -5,19 +5,19 @@ from datetime import date, timedelta
 import dash
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
-from dash import Input, Output, dcc, html
+from dash import Input, Output, State, dcc, html
+from dash.exceptions import PreventUpdate
 
 from grid.collector import config
 from grid.dashboard import colours, components, queries
 
 dash.register_page(__name__, path="/regional", name="Regional", order=3)
 
-RANGES = {"1": "Day", "3": "3 days", "7": "7 days"}
-GROUP_OPTIONS = [{"label": name, "value": code} for code, name in config.GSP_GROUPS.items()]
+DEFAULT_DAYS = 7  # the range shown first: the newest week of data
 
 INFO = (
-    "Half-hourly metered output for one **GSP group** (a settlement area; the letters match the Agile regions), "
-    "from Elexon's actual output per BM unit (B1610), summed by fuel.\n\n"
+    "Half-hourly metered output for the selected region, from Elexon's actual output per "
+    "BM unit (B1610), summed by fuel. The letters of the regions match the GSP groups it is settled in.\n\n"
     "**What is in it:** distribution-connected generation and batteries, the large transmission-connected "
     "plants (for example Torness and Whitelee in Southern Scotland, Peterhead and Foyers in Northern Scotland), "
     "and the suppliers' aggregated meter volumes. Suppliers' volumes are shown below zero as "
@@ -32,65 +32,85 @@ layout = html.Div(
     [
         html.Div(
             [
-                dcc.RadioItems(
-                    id="rg-group",
-                    options=GROUP_OPTIONS,
-                    value=config.DEFAULT_REGION if config.DEFAULT_REGION in config.GSP_GROUPS else next(iter(config.GSP_GROUPS)),
-                    inline=True,
-                    inputClassName="me-1",
-                    labelClassName="me-3",
-                ),
-                dcc.RadioItems(
-                    id="rg-days",
-                    options=[{"label": v, "value": k} for k, v in RANGES.items()],
-                    value="1",
-                    inline=True,
-                    inputClassName="ms-3 me-1",
+                components.region_select("Region", "rg-region", regions=list(config.GSP_GROUPS), className=""),
+                html.Div(
+                    [
+                        html.Label("Dates", className="small text-muted me-2 mb-0"),
+                        html.Div(
+                            dcc.DatePickerRange(
+                                id="rg-range",
+                                display_format="DD MMM YYYY",
+                                minimum_nights=0,  # a single day is allowed
+                                start_date_placeholder_text="From",
+                                end_date_placeholder_text="To",
+                            ),
+                            className="control-box",
+                        ),
+                    ],
+                    className="d-flex align-items-center",
                 ),
             ],
             className="mb-2 d-flex flex-wrap align-items-center gap-2",
         ),
-        html.Div(id="rg-date-box"),
         components.info(INFO),
+        html.Div(id="rg-message"),
+        dbc.Row(id="rg-tiles"),
         dcc.Graph(id="rg-chart", config={"displayModeBar": False}),
-        html.H5("Average over the selected period", className="mt-3"),
-        html.Div(id="rg-table"),
     ]
 )
 
 
-def _bounds(group):
-    lo, hi = queries.gsp_dates(group)
-    return lo, hi
+def _blank(fig):
+    """Empty chart with no axes, for the 'nothing to show' messages."""
+    fig.update_xaxes(visible=False)
+    fig.update_yaxes(visible=False)
+    return components.style(fig, 60)
 
 
-@dash.callback(Output("rg-date-box", "children"), Input("rg-group", "value"), Input("latest", "data"))
-def date_picker(group, _marker):
-    lo, hi = _bounds(group)
+@dash.callback(
+    Output("rg-range", "min_date_allowed"),
+    Output("rg-range", "max_date_allowed"),
+    Output("rg-range", "start_date"),
+    Output("rg-range", "end_date"),
+    Input("rg-region", "value"),
+    Input("latest", "data"),
+    State("rg-range", "start_date"),
+    State("rg-range", "end_date"),
+)
+def range_bounds(region, _marker, start, end):
+    """Limit the picker to the days stored. Keeps the chosen range if it still fits, else the newest week."""
+    lo, hi = queries.gsp_dates(region)
     if not hi:
-        return components.empty("No regional data collected yet. Run: python scripts/grid/collect.py gsp")
-    return dcc.DatePickerSingle(
-        id="rg-date", min_date_allowed=lo, max_date_allowed=hi, date=hi, display_format="DD MMM YYYY"
-    )
+        return None, None, None, None
+    # Elexon publishes about a week late, so the newest stored day is the end of the default range.
+    if start and end and lo <= start[:10] <= end[:10] <= hi:
+        return lo, hi, start, end
+    default_start = max(date.fromisoformat(lo), date.fromisoformat(hi) - timedelta(days=DEFAULT_DAYS - 1))
+    return lo, hi, default_start.isoformat(), hi
 
 
 @dash.callback(
     Output("rg-chart", "figure"),
-    Output("rg-table", "children"),
-    Input("rg-group", "value"),
-    Input("rg-days", "value"),
-    Input("rg-date", "date"),
+    Output("rg-tiles", "children"),
+    Output("rg-message", "children"),
+    Input("rg-region", "value"),
+    Input("rg-range", "start_date"),
+    Input("rg-range", "end_date"),
     Input("latest", "data"),
 )
-def chart(group, days, day, _marker):
+def chart(region, start_date, end_date, _marker):
     fig = go.Figure()
-    lo, hi = _bounds(group)
-    if not day or not hi:
-        return components.style(fig), ""
-    # The picker is rebuilt when the group changes; keep the date inside that group's data.
-    end = min(max(date.fromisoformat(day[:10]), date.fromisoformat(lo)), date.fromisoformat(hi))
-    start = end - timedelta(days=int(days) - 1)
-    data = queries.gsp_range(group, start.isoformat(), end.isoformat())
+    lo, hi = queries.gsp_dates(region)
+    if not hi:
+        return _blank(fig), "", components.empty(
+            "No regional data collected yet. Run: python scripts/grid/collect.py gsp"
+        )
+    if not start_date or not end_date:
+        raise PreventUpdate  # the user is part-way through picking a range
+    # The picker is limited to the stored days when the region changes; clamp anyway.
+    start = min(max(date.fromisoformat(start_date[:10]), date.fromisoformat(lo)), date.fromisoformat(hi))
+    end = min(max(date.fromisoformat(end_date[:10]), start), date.fromisoformat(hi))
+    data = queries.gsp_range(region, start.isoformat(), end.isoformat())
     net = {}
     rows = []
     for name in colours.REGIONAL_ORDER:
@@ -117,13 +137,10 @@ def chart(group, days, day, _marker):
     fig.update_layout(barmode="relative", bargap=0)
     components.style(fig, 460, "MW")
 
-    table = ""
+    tiles = [
+        components.tile(name.replace(" (net demand)", " demand"), f"{avg:,.0f} MW", "average", colours.COLOURS[name])
+        for name, avg in rows
+    ]
     if rows:
-        table = dbc.Table(
-            [
-                html.Thead(html.Tr([html.Th("Category"), html.Th("Average MW", className="text-end")])),
-                html.Tbody([html.Tr([html.Td(n), html.Td(f"{v:,.0f}", className="text-end")]) for n, v in rows]),
-            ],
-            size="sm", striped=True, className="w-auto",
-        )
-    return fig, table
+        tiles.append(components.tile("Net", f"{sum(avg for _, avg in rows):,.0f} MW", "average"))
+    return fig, tiles, ""
