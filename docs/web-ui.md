@@ -101,16 +101,16 @@ It replaces the System Health tab and chart in the Sheet. Pulse Monitor still ad
 - Reachable only over Tailscale (or localhost while developing). Never exposed to the internet, no Funnel.
 - No password: being on the tailnet is the control. Only one user is assumed.
 - Only scripts found in `scripts/` can run; there is no way to type a command. Parameters are validated on the server, and passed to the script as JSON, never through a shell.
-- Runs as its own low-privilege systemd service, separate from `remote-worker.service`.
+- Runs as its own systemd service (`remote-worker-web.service`, draft unit in `scripts/web/deploy/`), separate from `remote-worker.service`. It runs as the same user as the runner and is not sandboxed, because the scripts it starts need passwordless sudo and `credentials.json`.
 
-## Setup (planned)
+## Setup (drafted, not yet done on the Pi)
 
 1. Install Tailscale on the Pi and sign in; it is already installed on the phone.
 2. `git pull` on the Pi, then `uv sync` to install the web dependencies (`fastapi`, `uvicorn`).
-3. Install and start the web UI service, bound to the Pi's Tailscale address (`<pi-tailscale-ip>`).
-4. On the phone, open `http://<pi-tailscale-ip>:8051` and add it to the home screen.
+3. Install and start the web UI service, listening on `127.0.0.1:8051`, then publish it to the tailnet only with `tailscale serve`.
+4. On the phone, open the Pi's tailnet address and add it to the home screen.
 
-The exact commands go in [setup.md](setup.md) when the service exists.
+The commands are in [setup.md](setup.md#8-web-ui-service). Restart it later from the web page itself with `restart_pi`, mode `web`.
 
 ## Trying it on a laptop (built)
 

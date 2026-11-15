@@ -31,6 +31,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 VERSION_PATTERN = re.compile(r'^version\s*=\s*"([^"]+)"', re.MULTILINE)
 DEPENDENCY_FILES = ("pyproject.toml", "uv.lock")
 RESTART_PREFIXES = ("scripts/runner.py", "scripts/utils/")
+# The web UI (remote-worker-web.service) loads scripts/web/ once at start. It also
+# imports scripts/utils/ and pulse_monitor.py, so those restart it too.
+WEB_RESTART_PREFIXES = ("scripts/web/", "scripts/utils/", "scripts/pulse_monitor.py")
 MAX_LISTED_FILES = 40
 # The systemd unit sets PATH to the venv's bin only, so git in /usr/bin is not found
 FALLBACK_DIRS = ("/usr/local/bin", "/usr/bin", "/bin")
@@ -113,9 +116,13 @@ def main():
                 )
             notes.append("Dependencies synced")
 
-        restart_needed = any(f.startswith(RESTART_PREFIXES) for f in changed)
-        if restart_needed:
-            notes.append("RESTART NEEDED: runner or ControlPanel changed")
+        runner_restart = any(f.startswith(RESTART_PREFIXES) for f in changed)
+        web_restart = any(f.startswith(WEB_RESTART_PREFIXES) for f in changed)
+        restart_needed = runner_restart or web_restart
+        if runner_restart:
+            notes.append("RESTART NEEDED: runner or ControlPanel changed (restart_pi: service)")
+        if web_restart:
+            notes.append("RESTART NEEDED: web UI code changed (restart_pi: web)")
 
         if new_version == old_version:
             version_text = f"v{new_version} (version not bumped)"

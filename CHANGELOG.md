@@ -2,9 +2,15 @@
 
 Version lives in `pyproject.toml` (`version = "..."`). Newest first. Bump rules are in [docs/scripts.md](docs/scripts.md#versioning).
 
+## 0.9.1 - 2026-11-15
+
+- Going-live prep for the web UI; nothing installed or run on the Pi. `restart_pi` has a new mode `web` that restarts `remote-worker-web.service`. `git_pull_update` now reports "restart needed" for the web UI as well when `scripts/web/`, `scripts/utils/` or `pulse_monitor.py` changed, and says which `restart_pi` mode to use.
+- Draft unit `scripts/web/deploy/remote-worker-web.service` (localhost only, same user as the runner, not sandboxed because its scripts need sudo) and setup steps in [docs/setup.md](docs/setup.md#8-web-ui-service), including publishing it with `tailscale serve` and stopping the Sheet polling once the web UI is in use.
+- The runner needs a restart on the Pi only if you still use the Sheet runner (`runner.py` is unchanged); `restart_pi` itself changed, so pull before using the new mode.
+
 ## 0.9.0 - 2026-11-15
 
-- Web UI (`scripts/web/`): run, stop and watch the task scripts from a browser, without the Sheet. One card per script: a status badge, its parameters in a collapsible section (the collapsed line shows the current values), Run and Stop, the last result, and that script's own live output inside the card. Recent runs are listed at the bottom; tapping one opens its output in the script's card. Plain HTML/CSS/JS page and a small FastAPI JSON API; no front-end framework. Design and status: [docs/web-ui.md](docs/pi-control.md).
+- Web UI (`scripts/web/`): run, stop and watch the task scripts from a browser, without the Sheet. One card per script: a status badge, its parameters in a collapsible section (the collapsed line shows the current values), Run and Stop, the last result, and that script's own live output inside the card. Recent runs are listed at the bottom; tapping one opens its output in the script's card. Plain HTML/CSS/JS page and a small FastAPI JSON API; no front-end framework. Design and status: [docs/web-ui.md](docs/web-ui.md).
 - Scripts are found by reading the files (nothing is imported): any `scripts/*.py` with `main` except `runner` and `run_script`. Each runs through `run_script.py` as its own process, so Stop ends the whole process tree. One run per script at a time (lock file plus database), a 30 minute timeout (override with `TIMEOUT_S`), the last 20 runs and logs kept per script, and `CONFIRM` scripts need confirmation (enforced by the server, not just the page).
 - State is in `data/pi_control/state.db` (saved parameter values, history) and logs in `logs/`. The per-script `runs` tables are unchanged, so Sheet runs and web runs show in one history. A run still going when Pi Control restarts is picked up again.
 - Each finished web run is also appended to the Sheet Log tab, best effort (never affects the run). Not verified against the live Sheet.

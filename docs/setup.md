@@ -114,6 +114,31 @@ save_raspi_config <pi-ip>     # once; stored in .raspi-config (tracked in git)
 
 The SSH user is set by `PI_USER` at the top of the script. All remote paths are `~/Desktop/RaspPi-Remote-Worker`.
 
+## 8. Web UI service
+
+Drafted, not yet run on the Pi. The web UI (see [web-ui.md](web-ui.md)) is a second service next to `remote-worker.service`. It listens on localhost only and is published to your tailnet with Tailscale, so it is never reachable from the internet.
+
+```bash
+cd ~/Desktop/RaspPi-Remote-Worker
+git pull && uv sync --locked
+mkdir -p logs
+
+# Install the unit, filling in the user and repo path
+sed -e "s|__USER__|$(id -un)|g" -e "s|__REPO__|$PWD|g"     scripts/web/deploy/remote-worker-web.service   | sudo tee /etc/systemd/system/remote-worker-web.service > /dev/null
+sudo systemctl daemon-reload
+sudo systemctl enable --now remote-worker-web.service
+
+# Tailscale: install once, sign in, then publish port 8051 to the tailnet only
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
+sudo tailscale serve --bg 8051        # never use `tailscale funnel` here
+tailscale serve status                # shows the https://<pi>.<tailnet>.ts.net address
+```
+
+The service needs the same passwordless sudo as the runner (the Raspberry Pi OS default). Check it with `systemctl status remote-worker-web.service` and `tail -n 50 logs/web-service.log`. After pulling new code, run `restart_pi` with mode `web` (or `sudo systemctl restart remote-worker-web.service`). Rebooting the Pi ends any running script and the unit starts again at boot.
+
+Once the web UI works, the Sheet runner is optional: `sudo systemctl disable --now remote-worker.service` stops the 10-second polling of the Sheet. Re-enable it any time to use the Sheet again.
+
 ## Troubleshooting
 
 | Symptom | Check |

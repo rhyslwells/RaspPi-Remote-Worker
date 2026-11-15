@@ -1,0 +1,26 @@
+# Remote Worker web UI (Pi Control). DRAFT: not installed anywhere yet.
+# Placeholders __USER__ and __REPO__ are filled in by the install steps in docs/setup.md.
+# Deliberately NOT sandboxed like the grid units: the scripts it starts need
+# passwordless sudo (restart_pi, pulse_monitor) and credentials.json in the repo root.
+[Unit]
+Description=Remote Worker - web UI (Pi Control)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__REPO__
+Environment="PATH=__REPO__/.venv/bin"
+# Localhost only. Reach it from the phone with `tailscale serve` (see docs/setup.md).
+Environment="PI_CONTROL_HOST=127.0.0.1"
+Environment="PI_CONTROL_PORT=8051"
+ExecStart=__REPO__/.venv/bin/python3 scripts/web/app.py
+Restart=always
+RestartSec=5
+
+StandardOutput=append:__REPO__/logs/web-service.log
+StandardError=append:__REPO__/logs/web-service.log
+
+[Install]
+WantedBy=multi-user.target

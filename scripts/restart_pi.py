@@ -35,15 +35,17 @@ DESCRIPTION = (
 )
 PARAMS = [
     {"name": "mode", "label": "What to restart", "type": "choice",
-     "options": ["service", "reboot"], "default": "service",
-     "help": "service: restart the runner service in about 15 seconds. reboot: reboot "
-             "the Pi in about a minute (cancel within that minute over SSH with "
-             "sudo shutdown -c)."},
+     "options": ["service", "web", "reboot"], "default": "service",
+     "help": "service: restart the runner service in about 15 seconds. web: restart "
+             "this web page's service in about 15 seconds (reload the page afterwards). "
+             "reboot: reboot the Pi in about a minute (cancel within that minute over "
+             "SSH with sudo shutdown -c)."},
 ]
 # The web UI asks "Are you sure?" before running this script.
 CONFIRM = "This restarts the runner service or reboots the Pi."
 
 SERVICE_NAME = "remote-worker.service"
+WEB_SERVICE_NAME = "remote-worker-web.service"
 SERVICE_DELAY_SECONDS = 15
 # The systemd unit's PATH is the venv bin only, so use absolute paths.
 SUDO = "/usr/bin/sudo"
@@ -65,8 +67,12 @@ def restart(mode: str) -> tuple:
         return (False, "Not running on Linux", f"Platform is {sys.platform}; nothing done")
 
     mode = (mode or "service").strip().lower()
-    if mode not in ("service", "reboot"):
-        return (False, "Invalid mode", f"Parameter-1 must be 'service' or 'reboot', got: {mode!r}")
+    if mode not in ("service", "web", "reboot"):
+        return (
+            False,
+            "Invalid mode",
+            f"Mode must be 'service', 'web' or 'reboot', got: {mode!r}",
+        )
 
     try:
         check = _sudo(["true"])
@@ -78,15 +84,18 @@ def restart(mode: str) -> tuple:
                 f"sudo said: {check.stderr.strip()[:200]}",
             )
 
-        if mode == "service":
+        if mode in ("service", "web"):
+            unit = SERVICE_NAME if mode == "service" else WEB_SERVICE_NAME
             # A transient timer runs outside the service's cgroup, so it survives
             # the service being stopped and started again.
             result = _sudo([
                 SYSTEMD_RUN, f"--on-active={SERVICE_DELAY_SECONDS}s",
-                SYSTEMCTL, "restart", SERVICE_NAME,
+                SYSTEMCTL, "restart", unit,
             ])
-            message = f"Service restart scheduled in {SERVICE_DELAY_SECONDS}s"
-            details = f"{SERVICE_NAME} will restart; the runner is offline for a few seconds"
+            message = f"Restart of {unit} scheduled in {SERVICE_DELAY_SECONDS}s"
+            details = f"{unit} will restart; it is offline for a few seconds"
+            if mode == "web":
+                details += ". Anything the web page started and is still running is ended."
         else:
             result = _sudo([SHUTDOWN, "-r", "+1", "Reboot requested from Config sheet"])
             message = "Reboot scheduled in about 1 minute"
