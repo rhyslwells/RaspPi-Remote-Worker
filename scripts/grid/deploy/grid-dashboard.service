@@ -1,0 +1,43 @@
+# DRAFT (Phase 6). Not installed. Nothing here has run on the Pi yet.
+# Placeholders __REPO__ and __USER__ are filled in as for the collector units.
+#
+# Before installing, create the dedicated user (no login, no home):
+#   sudo useradd --system --no-create-home --shell /usr/sbin/nologin grid-dash
+# and check that grid-dash can traverse the home directory that holds the repo
+# (see docs/grid.md, open points). Serves 127.0.0.1:8050 only; Tailscale Funnel
+# (Phase 7) is the only thing that exposes it.
+
+[Unit]
+Description=GB grid dashboard (gunicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=grid-dash
+Group=grid-dash
+WorkingDirectory=__REPO__
+Environment=GRID_DB=__REPO__/data/grid.db
+ExecStart=__REPO__/.venv/bin/gunicorn --workers 1 --threads 2 --bind 127.0.0.1:8050 --access-logfile - scripts.grid.dashboard.app:server
+Restart=on-failure
+RestartSec=10
+
+# Hardening. The dashboard only reads grid.db and serves pages.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+# The repo sits under the normal user's home, so home must stay visible (read-only).
+ProtectHome=read-only
+# WAL mode needs write access to grid.db-wal and grid.db-shm even for readers.
+ReadWritePaths=__REPO__/data
+# Keep the Google service-account key and the Pi address out of reach of the dashboard.
+InaccessiblePaths=__REPO__/credentials.json __REPO__/.raspi-config
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
