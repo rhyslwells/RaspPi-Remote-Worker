@@ -3,9 +3,12 @@
 #
 # Before installing, create the dedicated user (no login, no home):
 #   sudo useradd --system --no-create-home --shell /usr/sbin/nologin grid-dash
-# and check that grid-dash can traverse the home directory that holds the repo
-# (see docs/grid.md, open points). Serves 127.0.0.1:8050 only; Tailscale Funnel
-# (Phase 7) is the only thing that exposes it.
+# Open points to settle on the Pi before enabling:
+#   - The repo is under the normal user's home. grid-dash must be able to traverse
+#     that home directory (often mode 750), or the service cannot read the repo.
+#   - grid.db must be readable by grid-dash, and the -wal and -shm files writable.
+#   - Check that gunicorn is installed in the venv (uv sync --extra grid).
+# Serves 127.0.0.1:8050 only; Tailscale Funnel (Phase 7) is the only thing that exposes it.
 
 [Unit]
 Description=GB grid dashboard (gunicorn)
