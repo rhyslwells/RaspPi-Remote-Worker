@@ -116,28 +116,21 @@ The SSH user is set by `PI_USER` at the top of the script. All remote paths are 
 
 ## 8. Web UI service
 
-Drafted, not yet run on the Pi. The web UI (see [web-ui.md](web-ui.md)) is a second service next to `remote-worker.service`. It listens on localhost only and is published to your tailnet with Tailscale, so it is never reachable from the internet.
+The web UI (see [web-ui.md](web-ui.md)) is a second service next to `remote-worker.service`. It listens on localhost only and is published to your tailnet with Tailscale, so it is never reachable from the internet. One script does the whole install and is safe to run again:
 
 ```bash
 cd ~/Desktop/RaspPi-Remote-Worker
-git pull && uv sync --locked
-mkdir -p logs
-
-# Install the unit, filling in the user and repo path
-sed -e "s|__USER__|$(id -un)|g" -e "s|__REPO__|$PWD|g"     scripts/web/deploy/remote-worker-web.service   | sudo tee /etc/systemd/system/remote-worker-web.service > /dev/null
-sudo systemctl daemon-reload
-sudo systemctl enable --now remote-worker-web.service
-
-# Tailscale: install once, sign in, then publish port 8051 to the tailnet only
-curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up
-sudo tailscale serve --bg 8051        # never use `tailscale funnel` here
-tailscale serve status                # shows the https://<pi>.<tailnet>.ts.net address
+git pull
+bash scripts/web/deploy/install_web.sh
 ```
 
-The service needs the same passwordless sudo as the runner (the Raspberry Pi OS default). Check it with `systemctl status remote-worker-web.service` and `tail -n 50 logs/web-service.log`. After pulling new code, run `restart_pi` with mode `web` (or `sudo systemctl restart remote-worker-web.service`). Rebooting the Pi ends any running script and the unit starts again at boot.
+It installs the dependencies (`.venv/bin/uv sync --locked`; `uv` lives in the venv, not on PATH), installs and starts `remote-worker-web.service`, installs Tailscale if missing, then prints a login link (open it on your phone, same account as the phone's Tailscale app) and publishes the page with `tailscale serve`. If Serve is not yet enabled on your tailnet it prints a link to enable it; open it and run the script again. The final address looks like `https://<pi-name>.<tailnet>.ts.net`; open it on any device with Tailscale on and use Share, Add to Home Screen on the phone.
 
-Once the web UI works, the Sheet runner is optional: `sudo systemctl disable --now remote-worker.service` stops the 10-second polling of the Sheet. Re-enable it any time to use the Sheet again.
+Options: `--stop-sheet-runner` also stops the 10-second Sheet polling (`sudo systemctl disable --now remote-worker.service`; bring it back with `enable --now`), and `--uninstall` removes the web service. Never use `tailscale funnel` for this page.
+
+**After a power cut or reboot** nothing needs doing: `tailscaled` and `remote-worker-web.service` are both enabled at boot and the `tailscale serve` setting is remembered. Anything that was running when the power went is ended and shows as failed, and the Pulse Monitor background schedule is not restarted (start it again from the page). Tailscale keys expire after 180 days by default; if the Pi drops off the tailnet one day, run `sudo tailscale up` once or disable key expiry for the Pi in the Tailscale admin console.
+
+Check it with `systemctl status remote-worker-web.service` and `tail -n 50 logs/web-service.log`. After pulling new code, run `restart_pi` with mode `web` (or `sudo systemctl restart remote-worker-web.service`).
 
 ## Troubleshooting
 

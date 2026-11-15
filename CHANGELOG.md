@@ -2,6 +2,11 @@
 
 Version lives in `pyproject.toml` (`version = "..."`). Newest first. Bump rules are in [docs/scripts.md](docs/scripts.md#versioning).
 
+## 0.9.2 - 2026-11-15
+
+- New `scripts/web/deploy/install_web.sh`: installs the web UI on the Pi in one run (dependencies, `remote-worker-web.service`, Tailscale, `tailscale serve`), safe to repeat, with `--stop-sheet-runner` and `--uninstall`. Replaces the hand-typed steps; [docs/setup.md](docs/setup.md#8-web-ui-service) now describes it and what happens after a power cut. `uv` is run from `.venv/bin/uv` (it is not on PATH on the Pi).
+- The web UI is live on the Pi over Tailscale and `prime_hunter` ran from a phone. No code changes to the runner or the scripts. Pull on the Pi; no restart needed for this change.
+
 ## 0.9.1 - 2026-11-15
 
 - Going-live prep for the web UI; nothing installed or run on the Pi. `restart_pi` has a new mode `web` that restarts `remote-worker-web.service`. `git_pull_update` now reports "restart needed" for the web UI as well when `scripts/web/`, `scripts/utils/` or `pulse_monitor.py` changed, and says which `restart_pi` mode to use.
