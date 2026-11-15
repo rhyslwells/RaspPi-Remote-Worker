@@ -6,7 +6,7 @@ from dash import Input, Output, dcc, html
 
 from grid.dashboard import colours, components, queries
 
-dash.register_page(__name__, path="/history", name="History", order=3)
+dash.register_page(__name__, path="/history", name="History", order=4)
 
 RANGES = {"14": "14 days", "30": "30 days", "90": "90 days", "365": "1 year"}
 
@@ -21,10 +21,27 @@ layout = html.Div(
             className="mb-2",
         ),
         html.H5("Daily metered generation by source"),
+        components.info(
+            "GB-wide generation per day (GWh) from transmission-connected plants and interconnectors, "
+            "by fuel. See the Glossary for what *metered* covers."
+        ),
         dcc.Graph(id="hi-gen", config={"displayModeBar": False}),
         html.H5("Daily average price", className="mt-3"),
+        components.info(
+            "Daily average Agile price for your region (solid green), the average of the cheapest 2 hours "
+            "of each day (dotted green) and the daily average GB system price (blue). "
+            "The gap between the two green lines shows how much shifting use to the cheapest window can save."
+        ),
         dcc.Graph(id="hi-price", config={"displayModeBar": False}),
         html.H5("Wind share against system price", className="mt-3"),
+        components.info(
+            "Each dot is one day: how much of that day's metered generation came from wind (x) "
+            "against the daily average system price (y). The idea is that windy days mean "
+            "cheaper power, so look for a downward slope.\n\n"
+            "Wind is only one driver. Others include demand, gas prices, interconnector flows, "
+            "plant outages and how short or long the system is overall (net imbalance volume). "
+            "Daily averages also hide a lot: a windy night and a calm evening cancel out."
+        ),
         dcc.Graph(id="hi-scatter", config={"displayModeBar": False}),
         html.Div(components.NOTE_METERED, className="small text-muted"),
     ]

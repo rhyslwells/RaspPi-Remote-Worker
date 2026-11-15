@@ -1,11 +1,57 @@
 body { background: #f6f7f9; }
-.tile-label { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
-.tile-value { font-size: 1.6rem; font-weight: 600; line-height: 1.2; }
-.tile-sub { font-size: 0.78rem; color: #6b7280; }
-.footer { font-size: 0.75rem; color: #6b7280; padding: 1.5rem 0; }
+[data-bs-theme="dark"] body { background: #14161a; }
+.tile-label { font-size: 0.75rem; color: var(--bs-secondary-color); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+.tile-value { font-size: clamp(1.15rem, 1.5vw, 1.6rem); font-weight: 600; line-height: 1.2; white-space: nowrap; }
+.tile-sub { font-size: 0.78rem; color: var(--bs-secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.footer { font-size: 0.75rem; color: var(--bs-secondary-color); padding: 1.5rem 0; }
 .navbar-brand { font-weight: 600; }
 .region-select { min-width: 220px; }
+
+/* collapsed "About this chart" boxes */
+.info-box { font-size: 0.85rem; color: var(--bs-secondary-color); }
+.info-box summary { cursor: pointer; user-select: none; color: var(--bs-link-color); }
+.info-box .info-body { border-left: 3px solid var(--bs-border-color); padding-left: 0.75rem; margin-top: 0.4rem; }
+.info-box .info-body p:last-child { margin-bottom: 0; }
+
+/* Plotly charts have transparent backgrounds; recolour text and grid per theme. */
+[data-bs-theme="dark"] .js-plotly-plot .plotly text,
+[data-bs-theme="dark"] .js-plotly-plot .plotly tspan { fill: #d7dbe0 !important; }
+/* hover labels: always a dark box with light text (the default box is white) */
+[data-bs-theme="dark"] .js-plotly-plot .hoverlayer .hovertext path { fill: #2a2f36 !important; stroke: #8b93a0 !important; }
+[data-bs-theme="dark"] .js-plotly-plot .hoverlayer .legend .bg { fill: #2a2f36 !important; stroke: #8b93a0 !important; }
+[data-bs-theme="dark"] .js-plotly-plot .hoverlayer text,
+[data-bs-theme="dark"] .js-plotly-plot .hoverlayer tspan { fill: #f1f3f5 !important; }
+[data-bs-theme="dark"] .js-plotly-plot .plotly .legend .bg { fill: transparent !important; }
+[data-bs-theme="dark"] .js-plotly-plot .plotly .gridlayer path,
+[data-bs-theme="dark"] .js-plotly-plot .plotly .zerolinelayer path { stroke: #3a3f47 !important; }
+[data-bs-theme="dark"] .js-plotly-plot .plotly .xaxislayer-above path,
+[data-bs-theme="dark"] .js-plotly-plot .plotly .yaxislayer-above path { stroke: #6b7280 !important; }
+
+/* Dash 4 dropdown / date picker use their own variables */
+[data-bs-theme="dark"] {
+  --Dash-Fill-Inverse-Strong: #1f2329;
+  --Dash-Text-Strong: #e5e7eb;
+  --Dash-Text-Weak: #a0a7b0;
+  --Dash-Stroke-Strong: #4b525c;
+  --Dash-Stroke-Weak: #343a42;
+  --Dash-Fill-Interactive-Weak: #2c323a;
+  --Dash-Shading-Weak: #2c323a;
+  --Dash-Shading-Strong: #3a414a;
+}
+[data-bs-theme="dark"] .card { background: #1f2329; }
+
 @media (max-width: 576px) {
   .tile-value { font-size: 1.3rem; }
   .region-select { min-width: 100%; }
 }
+
+/* Navbar follows the page theme: Flatly's navbar text is white by default. */
+.navbar {
+  --bs-navbar-color: var(--bs-body-color);
+  --bs-navbar-hover-color: var(--bs-link-hover-color);
+  --bs-navbar-active-color: var(--bs-link-color);
+  --bs-navbar-brand-color: var(--bs-body-color);
+  --bs-navbar-brand-hover-color: var(--bs-link-color);
+}
+.navbar .nav-link.active { font-weight: 600; text-decoration: underline; text-underline-offset: 0.35em; }
+.navbar .form-check-label { color: var(--bs-body-color); }

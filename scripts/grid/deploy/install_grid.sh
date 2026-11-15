@@ -19,7 +19,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../../.." && pwd)"
 RUN_USER="$(id -un)"
 UNIT_DIR=/etc/systemd/system
-TIMERS="grid-elexon grid-agile grid-summary grid-backup"
+TIMERS="grid-elexon grid-agile grid-summary grid-backup grid-gsp grid-prune"
 
 if [ "$EUID" -eq 0 ]; then
     echo -e "${YELLOW}Run as the normal user, not root (the script uses sudo itself).${NC}"
@@ -83,7 +83,7 @@ echo ""
 echo -e "${GREEN}Installed.${NC} Next runs:"
 systemctl list-timers 'grid-*' --no-pager
 echo ""
-echo "Fill the database now (optional, 7 days):"
+echo "Fill the database now (optional, 7 days; the gsp timer fills regional data itself from 04:00):"
 echo "  $REPO/.venv/bin/python3 scripts/grid/collect.py backfill --from \$(date -d '7 days ago' +%F) --to \$(date +%F)"
 echo "Logs: journalctl -u 'grid-collector@*' -n 50   and   $REPO/logs/grid_collector.log"
 echo "Optional heartbeat: put GRID_HEARTBEAT_URL=... in /etc/default/grid-collector"

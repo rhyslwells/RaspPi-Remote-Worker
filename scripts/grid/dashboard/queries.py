@@ -4,7 +4,6 @@ short-lived read-only connection (SQLite handles this cheaply), so a collector
 write in progress never blocks a page for more than the busy timeout.
 """
 
-import os
 import shutil
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
@@ -153,6 +152,29 @@ def demand_range(start: str, end: str):
     return [(to_local(r["ts_utc"]), r["indo_mw"]) for r in rows]
 
 
+def gsp_dates(group: str):
+    """First and last settlement date stored for a GSP group, or (None, None)."""
+    with _conn() as c:
+        row = c.execute(
+            "SELECT min(settlement_date), max(settlement_date) FROM gsp_generation WHERE gsp_group=?",
+            (group,),
+        ).fetchone()
+    return (row[0], row[1])
+
+
+def gsp_range(group: str, start: str, end: str):
+    """Metered output per category for UK days start..end: {category: [(local_dt, mw)]}."""
+    out = {}
+    with _conn() as c:
+        for r in c.execute(
+            "SELECT ts_utc, category, mwh FROM gsp_generation "
+            "WHERE gsp_group=? AND settlement_date BETWEEN ? AND ? ORDER BY ts_utc",
+            (group, start, end),
+        ):
+            out.setdefault(r["category"], []).append((to_local(r["ts_utc"]), r["mwh"] * 2))  # MWh per half hour to MW
+    return out
+
+
 # --- prices ------------------------------------------------------------------
 
 def agile_range(region: str, start: str, end: str):
@@ -233,13 +255,13 @@ def table_counts():
     with _conn() as c:
         return {
             t: c.execute(f"SELECT count(*) FROM {t}").fetchone()[0]
-            for t in ("generation", "demand", "system_price", "agile_price", "daily_summary", "agile_daily")
+            for t in ("generation", "demand", "system_price", "agile_price", "daily_summary", "agile_daily", "gsp_generation")
         }
 
 
 def system_info() -> dict:
-    """Database size, disk and (on a Pi) CPU temperature. All local reads."""
-    info = {"db_mb": None, "disk_free_pct": None, "cpu_temp_c": None}
+    """Database size and free disk. Local reads only."""
+    info = {"db_mb": None, "disk_free_pct": None}
     try:
         info["db_mb"] = Path(db.DB_PATH).stat().st_size / 1e6
     except OSError:
@@ -249,10 +271,4 @@ def system_info() -> dict:
         info["disk_free_pct"] = du.free / du.total * 100
     except OSError:
         pass
-    thermal = "/sys/class/thermal/thermal_zone0/temp"
-    if os.path.exists(thermal):
-        try:
-            info["cpu_temp_c"] = int(open(thermal).read().strip()) / 1000
-        except (OSError, ValueError):
-            pass
     return info

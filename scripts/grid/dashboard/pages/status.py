@@ -1,4 +1,4 @@
-"""Status: collector health, freshness, database size, Pi temperature and disk."""
+"""Status: collector health, freshness, database size and free disk."""
 
 import dash
 import dash_bootstrap_components as dbc
@@ -6,7 +6,7 @@ from dash import Input, Output, html
 
 from grid.dashboard import components, queries
 
-dash.register_page(__name__, path="/status", name="Status", order=4)
+dash.register_page(__name__, path="/status", name="Status", order=5)
 
 layout = html.Div([html.Div(id="st-body")])
 
@@ -28,7 +28,6 @@ def body(_marker, _n):
         components.tile("Agile prices to", _local(f["agile_to"]), "UK time"),
         components.tile("Database", components.fmt(info["db_mb"], 1, " MB")),
         components.tile("Disk free", components.fmt(info["disk_free_pct"], 0, "%")),
-        components.tile("CPU temperature", components.fmt(info["cpu_temp_c"], 0, " °C"), "Pi only"),
     ]
     last_ok = [
         html.Li(f"{job}: last success {_local(ts)} UK time") for job, ts in sorted(f["jobs"].items())

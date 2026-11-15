@@ -1,0 +1,10 @@
+[Unit]
+Description=Fetch GB metered output per GSP group (Elexon publishes it about a week late)
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+Unit=grid-collector@gsp.service
+
+[Install]
+WantedBy=timers.target

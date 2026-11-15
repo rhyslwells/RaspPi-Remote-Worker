@@ -12,7 +12,7 @@ RaspPi-Remote-Worker/
 │   ├── pulse_monitor.py       # Pi health samples (SQLite + "System Health" tab); repeats via a transient systemd timer
 │   ├── grid/                  # GB grid collector + Dash dashboard (own timers, not sheet-driven); see docs/grid.md
 │   │   ├── collect.py, seed_demo.py
-│   │   ├── collector/         # fetch, store (data/grid.db), summarise, CLI
+│   │   ├── collector/         # fetch (elexon, agile, gsp), store (data/grid.db), summarise, prune, CLI
 │   │   ├── dashboard/         # Dash app, queries.py, pages/
 │   │   └── deploy/            # systemd timers and install_grid.sh
 │   ├── other-ideas.py         # Notes for future scripts (not runnable)

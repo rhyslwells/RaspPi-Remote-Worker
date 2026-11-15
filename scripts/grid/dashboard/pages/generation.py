@@ -1,4 +1,4 @@
-"""Generation mix by fuel group for a chosen day or range."""
+"""Generation mix (GB-wide) by fuel group for a chosen day or range."""
 
 from datetime import date, timedelta
 
@@ -35,6 +35,20 @@ def layout():
                     ),
                 ],
                 className="mb-2",
+            ),
+            components.info(
+                "**What this shows:** half-hourly electricity generation for the whole of Great Britain, "
+                "stacked by fuel type, from Elexon (the BMRS FUELHH dataset). The grey line is national demand."
+                "\n\n"
+                "**GB-wide:** Elexon publishes generation as one national total, so the region selector "
+                "only applies to Agile prices."
+                "\n\n"
+                "**Metered:** transmission-connected power stations and interconnectors. Rooftop solar and "
+                "wind on local networks sit outside it, which is why the stack falls below the demand line, "
+                "especially on sunny days."
+                "\n\n"
+                "Interconnectors show net flow: above zero is importing, below zero is exporting. "
+                "Pumped storage is positive when generating and negative when pumping."
             ),
             dcc.Graph(id="gen-chart", config={"displayModeBar": False}),
             html.Div(components.NOTE_METERED, className="small text-muted"),
@@ -75,9 +89,9 @@ def chart(day, days, _marker):
             go.Scatter(
                 x=[t for t, _ in demand],
                 y=[v / 1000 for _, v in demand],
-                name="Demand (INDO)",
+                name="GB demand (INDO)",
                 mode="lines",
-                line=dict(color="#111", width=2),
+                line=dict(color="#78909c", width=2.5),
                 hovertemplate="%{y:.1f} GW",
             )
         )

@@ -2,6 +2,15 @@
 
 Version lives in `pyproject.toml` (`version = "..."`). Newest first. Bump rules are in [docs/scripts.md](docs/scripts.md#versioning).
 
+## 0.7.0 - 2026-11-15
+
+- Grid dashboard: dark mode switch (remembered per browser), one-line overview tiles, dates on the Agile and price time axes, a collapsed "About this chart" box on every chart, a Glossary page, a searchable region dropdown (names only), a navbar that follows the theme, and dark hover labels. The weekday heatmap on Prices is now a typical weekday and weekend line chart. The Status page no longer shows CPU temperature.
+- New Regional page: metered output for Southern and Northern Scotland by fuel, from Elexon B1610 and the BM unit reference. New `gsp` collector job and `gsp_generation` table (schema v3; existing `grid.db` files migrate on the next connect). Transmission-connected plants have no GSP group in Elexon's data, so `TRANSMISSION_UNITS` in `config.py` assigns them by hand. Elexon publishes this about a week late. Timer `grid-gsp` runs it daily at 04:00.
+- New `prune` job: raw half-hourly tables keep the last `RETENTION_DAYS` (30) days; `daily_summary` and `agile_daily` are kept so History still shows a year. Timer `grid-prune` runs it daily at 03:30.
+- `install_grid.sh` now installs the `grid-gsp` and `grid-prune` timers too, and the collector service timeout is 30 minutes (the first `gsp` run can take a while). Not installed on the Pi yet: re-run `install_grid.sh` there after pulling.
+- `python debug_ui.py` runs the dashboard locally with hot reload on `data/grid.db` (`--demo` for synthetic data).
+- No new dependencies. No service restart needed; nothing here touches `runner.py` or the sheet.
+
 ## 0.6.0 - 2026-11-15
 
 - Added the GB grid subsystem in `scripts/grid/` (see [docs/grid.md](docs/grid.md)): a collector for Elexon generation, demand and system prices and Octopus Agile rates (all 14 regions) into `data/grid.db`, and a Dash dashboard with a region selector. It runs from systemd timers, not from the sheet, and does not change `runner.py`, `ControlPanel` or any existing script.

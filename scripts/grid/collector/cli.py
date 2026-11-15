@@ -4,6 +4,8 @@ Command line for the grid collector. Run through scripts/grid/collect.py:
     python scripts/grid/collect.py elexon                 # trailing 2 settlement days
     python scripts/grid/collect.py agile                  # all regions, yesterday..tomorrow
     python scripts/grid/collect.py summary [--date D]     # default: yesterday (UK)
+    python scripts/grid/collect.py prune                  # drop raw rows older than RETENTION_DAYS
+    python scripts/grid/collect.py gsp [--from D --to D]  # metered output per GSP group (published ~a week late)
     python scripts/grid/collect.py backfill --from D --to D
 
 Exit code 0 on success, 1 on failure (so systemd marks the unit failed).
@@ -20,7 +22,7 @@ import time
 import traceback
 from datetime import date, datetime, timedelta, timezone
 
-from grid.collector import client, config, db, fetch_agile, fetch_elexon, summarise
+from grid.collector import client, config, db, fetch_agile, fetch_elexon, fetch_gsp, summarise
 
 logger = logging.getLogger("grid.collector")
 
@@ -99,6 +101,18 @@ def _run_summary(conn, args) -> int:
     return summarise.collect(conn, day, day)
 
 
+def _run_gsp(conn, args) -> int:
+    """Default: settlement days in the lookback window that are published and not stored yet."""
+    if args.start or args.to:
+        if not (args.start and args.to) or args.to < args.start:
+            raise ValueError("--from and --to must be given together, --to not before --from")
+        return fetch_gsp.collect(conn, args.start, args.to, refetch=True)
+    today = summarise.uk_today()
+    return fetch_gsp.collect(
+        conn, today - timedelta(days=config.GSP_LOOKBACK_DAYS), today - timedelta(days=config.GSP_LAG_DAYS)
+    )
+
+
 def _run_backfill(conn, args) -> int:
     if args.to < args.start:
         raise ValueError("--to is before --from")
@@ -107,6 +121,27 @@ def _run_backfill(conn, args) -> int:
     written += fetch_agile.collect(conn, start, end)
     written += summarise.collect(conn, args.start, args.to)
     return written
+
+
+def _run_prune(conn, args) -> int:
+    """Keep a rolling window of raw rows. The daily roll-ups are small and are kept."""
+    cutoff_day = (summarise.uk_today() - timedelta(days=config.RETENTION_DAYS)).isoformat()
+    cutoff_utc = cutoff_day + "T00:00:00Z"
+    history_cutoff = (datetime.now(timezone.utc) - timedelta(days=config.RUN_HISTORY_DAYS)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    deleted = 0
+    with conn:
+        for table in ("generation", "demand", "system_price", "gsp_generation"):
+            deleted += conn.execute(f"DELETE FROM {table} WHERE settlement_date < ?", (cutoff_day,)).rowcount
+        deleted += conn.execute("DELETE FROM agile_price WHERE valid_from_utc < ?", (cutoff_utc,)).rowcount
+        deleted += conn.execute("DELETE FROM collector_runs WHERE started_at < ?", (history_cutoff,)).rowcount
+    if deleted:
+        # Hand the freed pages back to the filesystem.
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        conn.execute("VACUUM")
+    logger.info("Pruned %d rows older than %s", deleted, cutoff_day)
+    return deleted
 
 
 def _run_backup(conn, args) -> int:
@@ -141,6 +176,8 @@ JOBS = {
     "elexon": _run_elexon,
     "agile": _run_agile,
     "summary": _run_summary,
+    "gsp": _run_gsp,
+    "prune": _run_prune,
     "backfill": _run_backfill,
     "backup": _run_backup,
 }
@@ -154,6 +191,10 @@ def main(argv=None) -> int:
     sub.add_parser("backup", help="copy grid.db to data/backups/")
     p_sum = sub.add_parser("summary", help="build daily roll-ups")
     p_sum.add_argument("--date", type=_day, help="UK date (default yesterday)")
+    sub.add_parser("prune", help="delete raw rows older than the retention window")
+    p_gsp = sub.add_parser("gsp", help="fetch metered output per GSP group (Elexon B1610)")
+    p_gsp.add_argument("--from", dest="start", type=_day, help="re-fetch this UK date onwards")
+    p_gsp.add_argument("--to", type=_day)
     p_back = sub.add_parser("backfill", help="fetch and summarise a date range")
     p_back.add_argument("--from", dest="start", type=_day, required=True)
     p_back.add_argument("--to", type=_day, required=True)

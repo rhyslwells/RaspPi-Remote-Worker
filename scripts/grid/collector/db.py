@@ -121,6 +121,22 @@ MIGRATIONS = [
         PRIMARY KEY (date, region, product)
     ) WITHOUT ROWID;
     """,
+    # 3: metered output per GSP group (Elexon B1610 joined to the BM unit
+    # reference), summed per fuel category. Only the groups in
+    # config.GSP_GROUPS are collected, to keep the file small.
+    """
+    CREATE TABLE gsp_generation (
+        ts_utc        TEXT NOT NULL,       -- period start, UTC
+        gsp_group     TEXT NOT NULL,       -- GSP group letter, same as the Agile region
+        category      TEXT NOT NULL,       -- Wind, Battery, ..., Supplier (net demand)
+        mwh           REAL NOT NULL,       -- metered volume in the half hour (negative = taken from the grid)
+        units         INTEGER NOT NULL,    -- BM units summed
+        settlement_date TEXT NOT NULL,
+        settlement_period INTEGER NOT NULL,
+        PRIMARY KEY (ts_utc, gsp_group, category)
+    ) WITHOUT ROWID;
+    CREATE INDEX idx_gsp_generation_date ON gsp_generation (settlement_date);
+    """,
 ]
 
 

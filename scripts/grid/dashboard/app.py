@@ -38,7 +38,9 @@ app = Dash(
 server = app.server  # gunicorn entry point
 
 REGION_OPTIONS = [
-    {"label": f"{code} · {name}", "value": code} for code, name in config.REGION_NAMES.items()
+    # "search" is the text the dropdown matches typed input against.
+    {"label": name, "value": code, "search": f"{name} {code}"}
+    for code, name in config.REGION_NAMES.items()
 ]
 
 
@@ -55,11 +57,21 @@ def _navbar():
                 html.Div(
                     [
                         html.Span(id="freshness", className="me-3 small"),
+                        dbc.Switch(
+                            id="dark-mode",
+                            label="Dark mode",
+                            value=False,
+                            persistence=True,
+                            persistence_type="local",
+                            className="mb-0",
+                        ),
                         dcc.Dropdown(
                             id="region",
                             options=REGION_OPTIONS,
                             value=config.DEFAULT_REGION,
                             clearable=False,
+                            searchable=True,
+                            placeholder="Search regions",
                             persistence=True,
                             persistence_type="local",
                             className="region-select",
@@ -71,8 +83,8 @@ def _navbar():
             fluid=True,
             className="flex-wrap",
         ),
-        color="light",
-        className="border-bottom mb-3",
+        color=None,
+        className="border-bottom mb-3 bg-body-tertiary",
     )
 
 
@@ -87,6 +99,7 @@ def serve_layout():
         [
             dcc.Location(id="url"),
             dcc.Store(id="latest"),
+            dcc.Store(id="theme-applied"),
             dcc.Interval(id="tick", interval=60_000),
             _navbar(),
             dbc.Container(body, fluid=True),
@@ -96,6 +109,18 @@ def serve_layout():
 
 
 app.layout = serve_layout
+
+
+app.clientside_callback(
+    """
+    function (dark) {
+        document.documentElement.setAttribute("data-bs-theme", dark ? "dark" : "light");
+        return dark ? "dark" : "light";
+    }
+    """,
+    Output("theme-applied", "data"),
+    Input("dark-mode", "value"),
+)
 
 
 @app.callback(Output("latest", "data"), Input("tick", "n_intervals"), State("latest", "data"))
@@ -124,4 +149,6 @@ def freshness_badge(_n, _marker):
 
 if __name__ == "__main__":
     # Development server for local testing only (never on the Pi).
-    app.run(debug=False, host="127.0.0.1", port=8050)
+    # --debug turns on hot reload: edits to pages, queries and assets/style.css
+    # show up in the browser without restarting. Bound to localhost only.
+    app.run(debug="--debug" in sys.argv, host="127.0.0.1", port=8050)

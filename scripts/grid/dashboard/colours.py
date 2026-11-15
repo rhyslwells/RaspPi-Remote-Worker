@@ -26,6 +26,13 @@ COLOURS = {
     IMPORTS: "#cfae2b",
 }
 
+# Regional page categories that are not in GROUPS.
+COLOURS["Battery"] = "#ab47bc"
+COLOURS["Supplier (net demand)"] = "#78909c"
+REGIONAL_ORDER = [
+    "Nuclear", "Biomass", "Hydro", "Pumped storage", "Wind", "Gas", "Other", "Battery", "Supplier (net demand)",
+]
+
 AGILE = "#00897b"
 SYSTEM_PRICE = "#5c6bc0"
 NEGATIVE = "#d32f2f"

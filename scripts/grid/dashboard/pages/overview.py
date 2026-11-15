@@ -16,6 +16,14 @@ layout = html.Div(
     [
         dbc.Row(id="ov-tiles"),
         html.H5(id="ov-agile-title", className="mt-2"),
+        components.info(
+            "Half-hourly **Octopus Agile** unit prices for the region chosen at the top right, "
+            "including VAT, for every slot Octopus has published (usually until tomorrow night)."
+            "\n\n"
+            "- **Green bars**: the cheapest 2 hours in a row (4 slots).\n"
+            "- **Red bars**: negative prices, where you are paid to use electricity.\n"
+            "- See the Glossary page for what Agile is and how it is set."
+        ),
         dcc.Graph(id="ov-agile", config={"displayModeBar": False}),
         html.Div(id="ov-fresh", className="small text-muted mb-4"),
     ]
@@ -34,7 +42,7 @@ def tiles(region, _marker):
         total = s["gen_total_mwh"] or 0
         share = lambda k: (s[k] / total * 100) if total and s.get(k) is not None else None  # noqa: E731
         out += [
-            components.tile("Metered generation", components.fmt(total / 1000, 0, " GWh"), s["date"]),
+            components.tile("Metered generation", components.fmt(total / 1000, 0, " GWh"), f"GB-wide, {s['date']}"),
             components.tile("Wind", components.fmt(share("gen_wind_mwh"), 0, "%"), "of metered", colours.COLOURS["Wind"]),
             components.tile("Gas", components.fmt(share("gen_gas_mwh"), 0, "%"), "of metered", colours.COLOURS["Gas"]),
             components.tile("Peak demand", components.fmt((s["demand_peak_mw"] or 0) / 1000, 1, " GW"), s["date"]),
@@ -89,7 +97,7 @@ def agile_chart(region, _marker):
         for s, v in zip(slots, y)
     ]
     fig = go.Figure(go.Bar(x=x, y=y, marker_color=colour, hovertemplate="%{x|%a %H:%M}: %{y:.1f} p/kWh<extra></extra>"))
-    fig.update_xaxes(tickformat="%a %H:%M")
+    components.date_axis(fig)
     return components.style(fig, 340, "p/kWh inc VAT"), title + " (cheapest 2 hours in green)"
 
 

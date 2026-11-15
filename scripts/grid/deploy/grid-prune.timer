@@ -1,0 +1,10 @@
+[Unit]
+Description=Prune raw GB grid rows older than the retention window
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+Unit=grid-collector@prune.service
+
+[Install]
+WantedBy=timers.target
