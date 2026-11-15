@@ -45,6 +45,16 @@ from utils.control_panel import ControlPanel, ScriptStatus
 from utils.script_db import connect
 
 SCRIPT_NAME = "pulse_monitor.py"
+# Parameters shown as form fields in Pi Control (see utils/params.py). A blank
+# interval takes one sample now; N starts sampling every N minutes; 0 stops it.
+PARAMS = [
+    {"name": "interval", "label": "Interval in minutes (blank = one sample, 0 = stop)",
+     "type": "int", "min": 0, "max": 1440},
+    {"name": "max_temp", "label": "Max CPU temperature (C)", "type": "float",
+     "default": 75, "min": 0, "max": 120},
+    {"name": "min_free", "label": "Min free disk (%)", "type": "float",
+     "default": 10, "min": 0, "max": 100},
+]
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HEALTH_SHEET_NAME = "System Health"
 HEALTH_HEADERS = [
@@ -232,7 +242,10 @@ def take_sample(panel: ControlPanel, max_temp: float, min_free: float,
     notes = []
     if not store_snapshot(timestamp, metrics):
         notes.append("database not updated")
-    sheet_error = append_to_sheet(panel, timestamp, metrics)
+    sheet_error = (
+        append_to_sheet(panel, timestamp, metrics)
+        if panel is not None else "no Google Sheet connection"
+    )
     if sheet_error:
         notes.append(f"System Health tab not updated ({sheet_error})")
 
@@ -248,7 +261,7 @@ def take_sample(panel: ControlPanel, max_temp: float, min_free: float,
 
     if warnings:
         message = "Health warning: " + "; ".join(warnings)
-        if log_warnings:
+        if log_warnings and panel is not None:
             panel.log_execution(SCRIPT_NAME, ScriptStatus.FAILED, message, details)
         return (False, message, details)
     return (True, summary, details)
@@ -349,43 +362,65 @@ def _parse_threshold(params: list, index: int, default: float) -> float:
     return float(params[index]) if len(params) > index and params[index] else default
 
 
-def main():
+def main(params=None):
     """
-    Main entry point for Pulse Monitor when run by the runner.
+    Main entry point for Pulse Monitor when run by the runner or Pi Control.
+
+    Args:
+        params: dict with "interval", "max_temp" and "min_free" (from Pi Control /
+            run_script.py). When None the values are read from the Config sheet.
 
     Returns:
         Tuple of (success: bool, message: str, details: str)
     """
     try:
-        panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
-        # Use the dict so a blank Parameter-1 does not shift Parameter-2/3
-        params_by_name = panel.get_script_parameters(SCRIPT_NAME)
-        params = [params_by_name.get(f"Parameter-{i}", "") for i in (1, 2, 3)]
+        from_sheet = params is None
+        if from_sheet:
+            panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
+            # Use the dict so a blank Parameter-1 does not shift Parameter-2/3
+            params_by_name = panel.get_script_parameters(SCRIPT_NAME)
+            raw = [params_by_name.get(f"Parameter-{i}", "") for i in (1, 2, 3)]
 
-        try:
-            max_temp = _parse_threshold(params, 1, DEFAULT_MAX_TEMP_C)
-            min_free = _parse_threshold(params, 2, DEFAULT_MIN_FREE_DISK_PCT)
-            minutes = int(params[0]) if params[0] else None
-        except ValueError:
-            return (False, "Invalid parameters",
-                    "Parameter-1 must be a whole number of minutes; Parameter-2 and "
-                    f"Parameter-3 must be numbers. Got: {params}")
+            try:
+                max_temp = _parse_threshold(raw, 1, DEFAULT_MAX_TEMP_C)
+                min_free = _parse_threshold(raw, 2, DEFAULT_MIN_FREE_DISK_PCT)
+                minutes = int(raw[0]) if raw[0] else None
+            except ValueError:
+                return (False, "Invalid parameters",
+                        "Parameter-1 must be a whole number of minutes; Parameter-2 and "
+                        f"Parameter-3 must be numbers. Got: {raw}")
+            blank_hint = "Parameter-1 was blank"
+            stop_hint = "set Parameter-1 to 0 and START to stop it"
+        else:
+            # The Google Sheet is only needed for the System Health tab. If it is not
+            # reachable (no credentials, offline) the sample is still taken and stored.
+            try:
+                panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
+            except Exception:
+                panel = None
+            minutes = params.get("interval")
+            max_temp = params.get("max_temp")
+            min_free = params.get("min_free")
+            max_temp = DEFAULT_MAX_TEMP_C if max_temp is None else float(max_temp)
+            min_free = DEFAULT_MIN_FREE_DISK_PCT if min_free is None else float(min_free)
+            blank_hint = "Interval was blank"
+            stop_hint = "run again with interval 0 to stop it"
 
         if minutes is None:
             success, message, details = take_sample(panel, max_temp, min_free)
-            # A blank Parameter-1 is a single sample, never a stop: say so if a
+            # A blank interval is a single sample, never a stop: say so if a
             # schedule is still running, because "0" is what stops it.
             if sys.platform.startswith("linux") and _timer_active():
                 details += (
-                    "\nNote: Parameter-1 was blank, so this was one extra sample. A "
-                    f"background schedule is still running ({TIMER_UNIT}.timer); set "
-                    "Parameter-1 to 0 and START to stop it."
+                    f"\nNote: {blank_hint}, so this was one extra sample. A "
+                    f"background schedule is still running ({TIMER_UNIT}.timer); "
+                    f"{stop_hint}."
                 )
             return (success, message, details)
 
         if minutes < 0 or minutes > MAX_INTERVAL_MINUTES:
             return (False, "Invalid interval",
-                    f"Parameter-1 must be 0 (stop) to {MAX_INTERVAL_MINUTES} minutes")
+                    f"Interval must be 0 (stop) to {MAX_INTERVAL_MINUTES} minutes")
 
         if not sys.platform.startswith("linux"):
             return (False, "Not running on Linux", f"Platform is {sys.platform}")
@@ -394,7 +429,9 @@ def main():
             success, message, details = stop_schedule()
         else:
             success, message, details = start_schedule(minutes, max_temp, min_free)
-        return (success, message, f"{details}\nParameter-1 was read as {params[0]!r}.")
+        if from_sheet:
+            details += f"\nParameter-1 was read as {raw[0]!r}."
+        return (success, message, details)
     except Exception as e:
         return (False, "Error running pulse_monitor", f"{type(e).__name__}: {e}")
 

@@ -2,6 +2,21 @@
 
 Version lives in `pyproject.toml` (`version = "..."`). Newest first. Bump rules are in [docs/scripts.md](docs/scripts.md#versioning).
 
+## 0.8.1 - 2026-11-15
+
+- Pi Control step 2: the remaining Sheet scripts can now take parameters without the Sheet. `db_report`, `restart_pi` and `pulse_monitor` declare `PARAMS` and accept `main(params=None)`; with `None` they read the Sheet exactly as before. `restart_pi` and `git_pull_update` set `CONFIRM`, which Pi Control will use for an "Are you sure?" step.
+- `pulse_monitor` run with parameters still takes and stores the sample and tries the System Health tab, but carries on with a note if the Sheet is unreachable.
+- `run_script.py` also runs `test_connection.py` (it has only the legacy `test_sheet_connection`, as in `runner.py`).
+- `runner.py` is unchanged and nothing was verified against the live Sheet, so the Sheet paths of the edited scripts are untested here. No new dependencies. No service restart needed.
+
+## 0.8.0 - 2026-11-15
+
+- First step towards Pi Control, a web UI that does what the Sheet does (scope in `debug/pi-control/scope.md`). Nothing in the UI exists yet.
+- New `scripts/run_script.py`: runs one task script as its own process (`python scripts/run_script.py prime_hunter --params '{"start": 1, "end": 50}'`), validates the parameters, records the run in the script's `runs` table and exits 0 (success), 1 (failed) or 2 (could not start). It refuses `runner` and itself, and forces UTF-8 output so emoji in script logs do not crash a run on Windows.
+- New `scripts/utils/params.py`: a script can declare a module-level `PARAMS` list (name, label, type, default, required, min, max, options) that is validated and converted before `main` runs.
+- Script contract extended, not broken: `main(params=None)` may take a `params` dict; with `None` it reads the Sheet as before. `main()` with no argument still works. `prime_hunter.py` is the first script converted; the rest follow.
+- The Sheet runner (`runner.py`) is unchanged. No new dependencies. No service restart needed.
+
 ## 0.7.1 - 2026-11-15
 
 - Grid dashboard: the region selector moved out of the header into the pages that use it (Overview, Prices, and above the price chart on History). It is one shared choice, remembered in the browser. Generation, Status and Glossary no longer show one.

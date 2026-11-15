@@ -24,6 +24,13 @@ from utils.script_db import connect, db_path, get_runs, list_databases
 
 DEFAULT_LIMIT = 20
 MAX_LIMIT = 200
+
+# Parameters shown as form fields in Pi Control (see utils/params.py).
+PARAMS = [
+    {"name": "script", "label": "Script name (blank = list all)", "type": "str"},
+    {"name": "limit", "label": "Recent runs to show", "type": "int",
+     "default": DEFAULT_LIMIT, "min": 1, "max": MAX_LIMIT},
+]
 CELL_CHARS = 200  # per-field truncation so the report stays readable
 MAX_DETAILS = 40000  # the sheet cell limit is 50,000 characters
 
@@ -99,14 +106,23 @@ def report(script: str = "", limit: int = DEFAULT_LIMIT) -> tuple:
         return (False, "Error reading databases", f"{type(e).__name__}: {e}")
 
 
-def main():
+def main(params=None):
     """
-    Main entry point when run by the runner.
+    Main entry point when run by the runner or Pi Control.
+
+    Args:
+        params: dict with "script" and "limit" (from Pi Control / run_script.py). When
+            None the values are read from the Config sheet.
 
     Returns:
         Tuple of (success: bool, message: str, details: str)
     """
     try:
+        if params is not None:
+            script = params.get("script") or ""
+            limit = params.get("limit") or DEFAULT_LIMIT
+            return report(script, limit)
+
         panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
         params = panel.get_script_parameters("db_report.py")
 

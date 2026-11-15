@@ -17,6 +17,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Pi Control asks "Are you sure?" before running this script.
+CONFIRM = "This pulls the latest code from git into the Pi's checkout."
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 VERSION_PATTERN = re.compile(r'^version\s*=\s*"([^"]+)"', re.MULTILINE)
 DEPENDENCY_FILES = ("pyproject.toml", "uv.lock")

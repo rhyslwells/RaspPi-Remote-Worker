@@ -17,6 +17,12 @@ sys.path.insert(0, str(Path(__file__).parent))
 from utils.control_panel import ControlPanel
 from utils.script_db import connect
 
+# Parameters shown as form fields in Pi Control (see utils/params.py).
+PARAMS = [
+    {"name": "start", "label": "Start (inclusive)", "type": "int", "required": True},
+    {"name": "end", "label": "End (inclusive)", "type": "int", "required": True},
+]
+
 
 def find_primes(start: int, end: int) -> list:
     """
@@ -69,26 +75,36 @@ def store_primes(primes: list):
         return None
 
 
-def main():
+def main(params=None):
     """
     Main entry point for Prime Hunter.
-    
+
+    Args:
+        params: dict with "start" and "end" (from Pi Control / run_script.py). When None
+            the values are read from the Config sheet, as the Sheet runner expects.
+
     Returns:
         Tuple of (success: bool, message: str, details: str)
     """
     try:
-        # Initialize Control Panel to read parameters
-        panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
-        
-        # Read parameters from Config sheet
-        params = panel.get_script_parameters_list("prime_hunter.py")
-        
-        # Get parameters - both are required
-        if len(params) < 2:
-            return (False, "Missing parameters", f"Expected 2 parameters, got {len(params)}: {params}")
-        
-        start = int(params[0])
-        end = int(params[1])
+        if params is None:
+            # Initialize Control Panel to read parameters
+            panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
+
+            # Read parameters from Config sheet
+            sheet_params = panel.get_script_parameters_list("prime_hunter.py")
+
+            # Both are required
+            if len(sheet_params) < 2:
+                return (False, "Missing parameters", f"Expected 2 parameters, got {len(sheet_params)}: {sheet_params}")
+
+            params = {"start": sheet_params[0], "end": sheet_params[1]}
+
+        if params.get("start") is None or params.get("end") is None:
+            return (False, "Missing parameters", f"Expected start and end, got: {params}")
+
+        start = int(params["start"])
+        end = int(params["end"])
         
         # Find primes in the specified range
         primes = find_primes(start, end)

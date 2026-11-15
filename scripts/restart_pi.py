@@ -26,6 +26,14 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from utils.control_panel import ControlPanel
 
+# Parameters shown as form fields in Pi Control (see utils/params.py).
+PARAMS = [
+    {"name": "mode", "label": "What to restart", "type": "choice",
+     "options": ["service", "reboot"], "default": "service"},
+]
+# Pi Control asks "Are you sure?" before running this script.
+CONFIRM = "This restarts the runner service or reboots the Pi."
+
 SERVICE_NAME = "remote-worker.service"
 SERVICE_DELAY_SECONDS = 15
 # The systemd unit's PATH is the venv bin only, so use absolute paths.
@@ -87,14 +95,20 @@ def restart(mode: str) -> tuple:
         return (False, "Error scheduling restart", f"{type(e).__name__}: {e}")
 
 
-def main():
+def main(params=None):
     """
     Main entry point for Restart Pi.
+
+    Args:
+        params: dict with "mode" (from Pi Control / run_script.py). When None the mode
+            is read from the Config sheet.
 
     Returns:
         Tuple of (success: bool, message: str, details: str)
     """
     try:
+        if params is not None:
+            return restart(params.get("mode") or "service")
         panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
         params = panel.get_script_parameters("restart_pi.py")
         return restart(params.get("Parameter-1", "service"))
