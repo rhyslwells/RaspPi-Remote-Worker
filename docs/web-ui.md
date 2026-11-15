@@ -2,7 +2,7 @@
 
 The web UI is a page for running and watching the task scripts on the Pi, as an alternative to the Google Sheet. It is meant to be used from a phone.
 
-**Status: live.** Installed on the Pi as `remote-worker-web.service` and reached over Tailscale from a phone (2026-11-15; `prime_hunter` ran from the phone). Also runs on a laptop with `python debug_control.py`. Still unchecked: Stop on Linux, the Sheet Log mirror and a reboot.
+**Status: live.** Installed on the Pi as `remote-worker-web.service` and reached over Tailscale from a phone (2026-11-15; `prime_hunter` ran from the phone). Also runs on a laptop with `python debug_control.py`. The Sheet Log mirror, `git_pull_update` and `db_report` have been checked from the phone. Stop on Linux and a power cycle have also passed on the Pi.
 
 ## Purpose
 
