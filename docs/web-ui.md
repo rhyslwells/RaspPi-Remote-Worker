@@ -80,14 +80,14 @@ A script also sets `DESCRIPTION`, a plain-language paragraph shown on its card: 
 The top of the page shows the Pi's current state and a graph, with no Sheet involved:
 
 - **Tiles:** CPU temperature, load, memory used, disk used, uptime and power (throttle) status, read live from the machine. Anything over a limit shows as a warning. Off the Pi most readings are n/a.
-- **Sampling badge:** "sampling" when the background sampling timer started by Pulse Monitor is running, "not sampling" when it is not. It does not survive a reboot, so start it again with Pulse Monitor.
-- **Graph:** the samples Pulse Monitor has stored in `data/pulse_monitor.db`, for the last 1 hour, 6 hours, 24 hours or 7 days, one of CPU temperature, load, or memory and disk. It fills in as samples are collected; until then it says how to start collecting.
+- **Sampling badge:** "sampling" when `pulse-sample.timer` is running, "not sampling" when it is not. The timer takes a sample every 5 minutes from boot, installed by `install_web.sh`, and survives reboots. Pulse Monitor is not on the page; the timer runs it with `--sample --no-sheet`.
+- **Graph:** the samples stored in `data/pulse_monitor.db` by the timer, for the last 1 hour, 6 hours, 24 hours or 7 days, one of CPU temperature, load, or memory and disk. It fills in as samples are collected.
 
-It replaces the System Health tab and chart in the Sheet. Pulse Monitor still adds rows to that tab when it can.
+It replaces the System Health tab and chart in the Sheet. The background timer never writes to the Sheet; only a Sheet-started Pulse Monitor still does.
 
 ## Behaviour (built)
 
-- **Script list:** every `scripts/*.py` that defines `main` (or the legacy `test_sheet_connection`), except `runner` and `run_script`. The files are read, not imported, so `PARAMS`, `CONFIRM` and `TIMEOUT_S` must be plain literal values. Today that is the same set as the Config sheet: `db_report`, `git_pull_update`, `prime_hunter`, `pulse_monitor`, `restart_pi`, `test_connection`.
+- **Script list:** every `scripts/*.py` that defines `main` (or the legacy `test_sheet_connection`), except `runner`, `run_script` and `pulse_monitor` (which runs from the timer, not the page). The files are read, not imported, so `PARAMS`, `CONFIRM` and `TIMEOUT_S` must be plain literal values. Today that is the same set as the Config sheet: `db_report`, `git_pull_update`, `prime_hunter`, `pulse_monitor`, `restart_pi`, `test_connection`.
 - **Run:** one tap. Scripts that set `CONFIRM` show an "Are you sure?" box, and the server refuses to run them without confirmation. The values used are remembered per script.
 - **Stop:** ends the script and its child processes and records the run as failed ("Stopped by user"). The state shows as "stopped".
 - **Output:** shown inside each script's own card, live while running (the page polls), kept per run. Tapping a run in Recent runs opens it in that script's card. The last 20 runs and logs per script are kept.

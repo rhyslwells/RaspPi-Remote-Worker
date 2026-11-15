@@ -52,7 +52,9 @@ STATE_DIR = DATA_DIR / "pi_control"
 LOCK_DIR = STATE_DIR / "locks"
 
 # Files in the scripts folder that are not task scripts.
-EXCLUDED = {"runner", "run_script"}
+# pulse_monitor runs from pulse-sample.timer (see scripts/web/deploy/), not from the page;
+# health.py still imports it.
+EXCLUDED = {"runner", "run_script", "pulse_monitor"}
 KEEP_RUNS = 20            # logs and history kept per script
 DEFAULT_TIMEOUT_S = 1800  # a script can override with TIMEOUT_S
 STOP_GRACE_S = 5          # SIGTERM first, SIGKILL after this (Linux)

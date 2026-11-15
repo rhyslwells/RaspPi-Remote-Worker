@@ -405,7 +405,7 @@ function drawChart(data, metric) {
     let why;
     if (pts.length >= 2) why = "This reading is not available on this machine.";
     else if (data.schedule === "active") why = "Waiting for samples to arrive.";
-    else why = "Not enough samples yet. Run Pulse Monitor with an interval to start collecting them.";
+    else why = "Not enough samples yet. Samples are taken every 5 minutes by the background timer; on a laptop there is none.";
     wrap.append(h("div", { class: "help" }, why));
     return wrap;
   }

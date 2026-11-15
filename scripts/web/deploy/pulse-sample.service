@@ -1,0 +1,10 @@
+[Unit]
+Description=Pi health sample (pulse_monitor.py --sample)
+
+[Service]
+Type=oneshot
+User=__USER__
+WorkingDirectory=__REPO__
+# Database only: the health card reads data/pulse_monitor.db. Never touches the Sheet.
+ExecStart=__REPO__/.venv/bin/python3 scripts/pulse_monitor.py --sample --no-sheet
+TimeoutStartSec=60

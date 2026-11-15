@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from utils import script_db
 
+BACKGROUND_TIMER = "pulse-sample"  # permanent timer, installed by install_web.sh
 RANGES_HOURS = (1, 6, 24, 168)  # 1h, 6h, 24h, 7d
 MAX_POINTS = 240                # thin out long ranges so the page stays light
 COLUMNS = ["taken_at", "cpu_temp_c", "load_1m", "mem_used_pct", "disk_used_pct", "uptime_h"]
@@ -36,13 +37,13 @@ def current() -> Dict[str, Any]:
 
 
 def schedule() -> str:
-    """'active' or 'inactive' for the background sampling timer, 'unknown' off the Pi."""
+    """'active' or 'inactive' for the pulse-sample timer, 'unknown' off the Pi."""
     if not sys.platform.startswith("linux"):
         return "unknown"
     pm = _monitor()
     try:
         result = subprocess.run(
-            [pm.SYSTEMCTL, "is-active", f"{pm.TIMER_UNIT}.timer"],
+            [pm.SYSTEMCTL, "is-active", f"{BACKGROUND_TIMER}.timer"],
             capture_output=True, text=True, timeout=5,
         )
     except (OSError, subprocess.SubprocessError):

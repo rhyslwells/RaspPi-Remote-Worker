@@ -2,6 +2,11 @@
 
 Version lives in `pyproject.toml` (`version = "..."`). Newest first. Bump rules are in [docs/scripts.md](docs/scripts.md#versioning).
 
+## 0.9.3 - 2026-11-15
+
+- Pi health sampling is now a permanent background job instead of a script you start: `pulse-sample.timer` runs `pulse_monitor.py --sample --no-sheet` every 5 minutes from boot, so the health card and graph fill in by themselves and survive reboots. `install_web.sh` installs it (and stops the old temporary `pulse-monitor` timer). Run `bash scripts/web/deploy/install_web.sh` on the Pi after pulling.
+- `pulse_monitor` is no longer listed on the web page. The health card's "sampling" badge now watches `pulse-sample.timer`. `pulse_monitor.py` gains `--no-sheet` (store in the database, never contact the Sheet); the Sheet-started behaviour is unchanged.
+
 ## 0.9.2 - 2026-11-15
 
 - New `scripts/web/deploy/install_web.sh`: installs the web UI on the Pi in one run (dependencies, `remote-worker-web.service`, Tailscale, `tailscale serve`), safe to repeat, with `--stop-sheet-runner` and `--uninstall`. Replaces the hand-typed steps; [docs/setup.md](docs/setup.md#8-web-ui-service) now describes it and what happens after a power cut. `uv` is run from `.venv/bin/uv` (it is not on PATH on the Pi).

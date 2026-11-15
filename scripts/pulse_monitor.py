@@ -27,6 +27,7 @@ Standard library only (reads /proc and /sys), so it needs no new dependency.
 
 Command line (from the repo root):
     python scripts/pulse_monitor.py --sample      # one sample, as the timer runs it
+    python scripts/pulse_monitor.py --sample --no-sheet   # database only (pulse-sample.timer)
 """
 
 import argparse
@@ -232,7 +233,7 @@ def format_details(metrics: dict) -> str:
 
 
 def take_sample(panel: ControlPanel, max_temp: float, min_free: float,
-                log_warnings: bool = False) -> tuple:
+                log_warnings: bool = False, use_sheet: bool = True) -> tuple:
     """
     Collect, store and report one sample.
 
@@ -242,6 +243,7 @@ def take_sample(panel: ControlPanel, max_temp: float, min_free: float,
         min_free: Minimum free disk percent before warning
         log_warnings: Also write a FAILED row to the Log tab on a warning (used by
             scheduled samples, which have no Config row to show the result)
+        use_sheet: False never touches the Sheet (the permanent background timer)
 
     Returns:
         Tuple of (success: bool, message: str, details: str)
@@ -255,10 +257,12 @@ def take_sample(panel: ControlPanel, max_temp: float, min_free: float,
     notes = []
     if not store_snapshot(timestamp, metrics):
         notes.append("database not updated")
-    sheet_error = (
-        append_to_sheet(panel, timestamp, metrics)
-        if panel is not None else "no Google Sheet connection"
-    )
+    if not use_sheet:
+        sheet_error = None
+    elif panel is not None:
+        sheet_error = append_to_sheet(panel, timestamp, metrics)
+    else:
+        sheet_error = "no Google Sheet connection"
     if sheet_error:
         notes.append(f"System Health tab not updated ({sheet_error})")
 
@@ -455,13 +459,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Pi health snapshot.")
     parser.add_argument("--sample", action="store_true",
                         help="take one sample now (how the timer runs it)")
+    parser.add_argument("--no-sheet", action="store_true",
+                        help="store the sample in the database only; never contact the Sheet")
     parser.add_argument("--max-temp", type=float, default=DEFAULT_MAX_TEMP_C)
     parser.add_argument("--min-free", type=float, default=DEFAULT_MIN_FREE_DISK_PCT)
     args = parser.parse_args()
     if args.sample:
+        sheet = not args.no_sheet
         ok, msg, det = take_sample(
-            ControlPanel(spreadsheet_name="RaspPI-Remote-Worker"),
-            args.max_temp, args.min_free, log_warnings=True,
+            ControlPanel(spreadsheet_name="RaspPI-Remote-Worker") if sheet else None,
+            args.max_temp, args.min_free, log_warnings=sheet, use_sheet=sheet,
         )
         print(f"{'OK' if ok else 'FAILED'}: {msg}\n{det}")
     else:

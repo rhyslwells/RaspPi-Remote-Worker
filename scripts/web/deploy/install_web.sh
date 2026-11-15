@@ -9,6 +9,7 @@
 # Safe to run again: every step checks first. It does:
 #   1. installs the Python dependencies (.venv/bin/uv sync --locked)
 #   2. installs and enables remote-worker-web.service (localhost:8051, starts at boot)
+#      and pulse-sample.timer (a Pi health sample every 5 minutes, also from boot)
 #   3. installs Tailscale if missing and signs the Pi in (prints a login link: open it
 #      on your phone or laptop, same account as your phone's Tailscale app)
 #   4. publishes the page to your tailnet only with `tailscale serve` (never Funnel)
@@ -25,7 +26,8 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../../.." && pwd)"
 RUN_USER="$(id -un)"
 UNIT=remote-worker-web.service
-UNIT_PATH=/etc/systemd/system/$UNIT
+UNIT_DIR=/etc/systemd/system
+UNIT_PATH=$UNIT_DIR/$UNIT
 PORT=8051
 
 if [ "$EUID" -eq 0 ]; then
@@ -38,6 +40,8 @@ if [ "$1" = "--uninstall" ]; then
     sudo tailscale serve reset 2>/dev/null || true
     sudo systemctl disable --now "$UNIT" 2>/dev/null || true
     sudo rm -f "$UNIT_PATH"
+    sudo systemctl disable --now pulse-sample.timer 2>/dev/null || true
+    sudo rm -f "$UNIT_DIR/pulse-sample.timer" "$UNIT_DIR/pulse-sample.service"
     sudo systemctl daemon-reload
     echo -e "${GREEN}Removed. Tailscale itself, data/ and logs/ are left in place.${NC}"
     exit 0
@@ -59,7 +63,13 @@ echo -e "${BLUE}Step 2/4: web UI service${NC}"
 mkdir -p "$REPO/logs"
 sed -e "s|__USER__|$RUN_USER|g" -e "s|__REPO__|$REPO|g" \
     "$HERE/remote-worker-web.service" | sudo tee "$UNIT_PATH" > /dev/null
+for f in pulse-sample.service pulse-sample.timer; do
+    sed -e "s|__USER__|$RUN_USER|g" -e "s|__REPO__|$REPO|g"         "$HERE/$f" | sudo tee "$UNIT_DIR/$f" > /dev/null
+done
+# The old Pulse Monitor schedule (a temporary timer started from the page) is replaced
+sudo systemctl stop pulse-monitor.timer pulse-monitor.service 2>/dev/null || true
 sudo systemctl daemon-reload
+sudo systemctl enable --now pulse-sample.timer
 sudo systemctl enable "$UNIT"
 sudo systemctl restart "$UNIT"
 sleep 3
