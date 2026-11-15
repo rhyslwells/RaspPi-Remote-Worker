@@ -1,0 +1,14 @@
+[Unit]
+Description=Fetch Octopus Agile rates (next-day prices appear around 16:00 UK time)
+
+[Timer]
+# Every 30 minutes from 15:35 to 17:35 UK time, plus a catch-up after midnight.
+# OnCalendar follows the Pi's timezone, which must be Europe/London.
+OnCalendar=*-*-* 15..17:05,35:00
+OnCalendar=*-*-* 00:15:00
+RandomizedDelaySec=30
+Persistent=true
+Unit=grid-collector@agile.service
+
+[Install]
+WantedBy=timers.target

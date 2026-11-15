@@ -2,6 +2,13 @@
 
 Version lives in `pyproject.toml` (`version = "..."`). Newest first. Bump rules are in [docs/scripts.md](docs/scripts.md#versioning).
 
+## 0.6.0 - 2026-11-15
+
+- Added the GB grid subsystem in `scripts/grid/` (see [docs/grid.md](docs/grid.md)): a collector for Elexon generation, demand and system prices and Octopus Agile rates (all 14 regions) into `data/grid.db`, and a Dash dashboard with a region selector. It runs from systemd timers, not from the sheet, and does not change `runner.py`, `ControlPanel` or any existing script.
+- `scripts/grid/deploy/install_grid.sh` installs and removes the timers on the Pi (`--uninstall`). Not run yet.
+- `scripts/grid/seed_demo.py` fills `data/grid_demo.db` with synthetic data so the dashboard can be tested locally without the Pi or network.
+- New optional dependency group `grid` (`dash`, `plotly`, `gunicorn`, `dash-bootstrap-components`, `requests`). The collector needs none of them on the Pi; the dashboard does (`uv sync --extra grid`). No service restart needed.
+
 ## 0.5.2 - 2026-11-14
 
 - `db_report.py`: when `Parameter-1` is blank (so it lists all databases), the result now ends with the parameters it actually received. Makes a value typed in the wrong column visible.

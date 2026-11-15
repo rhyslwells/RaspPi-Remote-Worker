@@ -1,0 +1,19 @@
+[Unit]
+Description=GB grid collector job: %i
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=__USER__
+WorkingDirectory=__REPO__
+ExecStart=__REPO__/.venv/bin/python3 scripts/grid/collect.py %i
+# Optional: GRID_HEARTBEAT_URL=... (kept out of the repo)
+EnvironmentFile=-/etc/default/grid-collector
+TimeoutStartSec=300
+# The collector only needs to write to data/ and logs/.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=__REPO__/data __REPO__/logs

@@ -1,8 +1,10 @@
 # RaspPi Remote Worker
 
-Version 0.5.2 ([changelog](CHANGELOG.md), [how to bump](docs/scripts.md#versioning)). The version is shown in every update message.
+Version 0.6.0 ([changelog](CHANGELOG.md), [how to bump](docs/scripts.md#versioning)). The version is shown in every update message.
 
 A Raspberry Pi task runner controlled from a Google Sheet. A systemd service on the Pi polls the sheet, runs the Python script named in any row whose status is `START`, and writes the result back. No web UI and no SSH needed to trigger a job: change a cell.
+
+Separate from the sheet runner, `scripts/grid/` collects GB grid data and Octopus Agile prices on systemd timers and serves a dashboard: see [docs/grid.md](docs/grid.md).
 
 **Control panel:** [Google Sheets dashboard](https://docs.google.com/spreadsheets/d/1d9QU9st_j2gY4Qp7gkhNu5PB016w58sfkjGkW4JydD8/edit?gid=0#gid=0)
 

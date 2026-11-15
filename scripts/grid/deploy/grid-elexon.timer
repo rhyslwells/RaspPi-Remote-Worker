@@ -1,0 +1,12 @@
+[Unit]
+Description=Fetch Elexon generation, demand and system prices every 30 minutes
+
+[Timer]
+# Two minutes after each half hour, once the period has been published.
+OnCalendar=*:02,32:00
+RandomizedDelaySec=20
+Persistent=true
+Unit=grid-collector@elexon.service
+
+[Install]
+WantedBy=timers.target

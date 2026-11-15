@@ -16,6 +16,7 @@ Schema changes: append a new entry to MIGRATIONS. The version is stored in
 """
 
 import logging
+import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,7 +26,9 @@ logger = logging.getLogger(__name__)
 
 # scripts/grid/collector/db.py -> parents[3] is the repo root.
 DATA_DIR = Path(__file__).resolve().parents[3] / "data"
-DB_PATH = DATA_DIR / "grid.db"
+# GRID_DB points the collector and dashboard at another file (for example the
+# demo database from seed_demo.py) without touching the real one.
+DB_PATH = Path(os.environ.get("GRID_DB") or DATA_DIR / "grid.db")
 
 MIGRATIONS = [
     # 1: raw half-hourly data and run history

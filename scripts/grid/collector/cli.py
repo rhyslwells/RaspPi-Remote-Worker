@@ -14,12 +14,13 @@ import argparse
 import logging
 import logging.handlers
 import os
+import sqlite3
 import sys
 import time
 import traceback
 from datetime import date, datetime, timedelta, timezone
 
-from grid.collector import config, db, fetch_agile, fetch_elexon, summarise
+from grid.collector import client, config, db, fetch_agile, fetch_elexon, summarise
 
 logger = logging.getLogger("grid.collector")
 
@@ -108,11 +109,40 @@ def _run_backfill(conn, args) -> int:
     return written
 
 
+def _run_backup(conn, args) -> int:
+    """Copy grid.db with SQLite's online backup (safe while it is being written)."""
+    backup_dir = db.DB_PATH.parent / "backups"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    target = backup_dir / f"grid-{datetime.now(timezone.utc):%Y%m%d}.db"
+    dest = sqlite3.connect(target)
+    try:
+        conn.backup(dest)
+    finally:
+        dest.close()
+    # Keep the newest BACKUPS_KEPT files.
+    for old in sorted(backup_dir.glob("grid-*.db"))[: -config.BACKUPS_KEPT]:
+        old.unlink()
+    logger.info("Backup written to %s", target)
+    return 1
+
+
+def _heartbeat() -> None:
+    """Ping GRID_HEARTBEAT_URL after a successful run, if one is configured."""
+    url = os.environ.get("GRID_HEARTBEAT_URL")
+    if not url:
+        return
+    try:
+        client.get_text(url)
+    except Exception as exc:  # monitoring must never fail a job
+        logger.warning("Heartbeat ping failed: %s", exc)
+
+
 JOBS = {
     "elexon": _run_elexon,
     "agile": _run_agile,
     "summary": _run_summary,
     "backfill": _run_backfill,
+    "backup": _run_backup,
 }
 
 
@@ -121,6 +151,7 @@ def main(argv=None) -> int:
     sub = parser.add_subparsers(dest="job", required=True)
     sub.add_parser("elexon", help="fetch generation, demand and system prices")
     sub.add_parser("agile", help="fetch Agile rates for all regions")
+    sub.add_parser("backup", help="copy grid.db to data/backups/")
     p_sum = sub.add_parser("summary", help="build daily roll-ups")
     p_sum.add_argument("--date", type=_day, help="UK date (default yesterday)")
     p_back = sub.add_parser("backfill", help="fetch and summarise a date range")
@@ -152,5 +183,7 @@ def main(argv=None) -> int:
         return 0
     if error:
         return 1
+    if args.job in config.HEARTBEAT_JOBS:
+        _heartbeat()
     logger.info("Job %s ok, %d rows in %.1fs", args.job, written, time.monotonic() - t0)
     return 0

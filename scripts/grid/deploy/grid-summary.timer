@@ -1,0 +1,10 @@
+[Unit]
+Description=Build yesterday's GB grid daily summary
+
+[Timer]
+OnCalendar=*-*-* 00:30:00
+Persistent=true
+Unit=grid-collector@summary.service
+
+[Install]
+WantedBy=timers.target

@@ -12,6 +12,13 @@ logger = logging.getLogger(__name__)
 _RETRY_STATUS = {429, 500, 502, 503, 504}
 
 
+def get_text(url: str, timeout: int = 10) -> str:
+    """One plain GET with no retry (used for the optional heartbeat ping)."""
+    resp = requests.get(url, timeout=timeout, headers={"User-Agent": "raspi-grid-collector"})
+    resp.raise_for_status()
+    return resp.text
+
+
 def get_json(url: str, params: dict = None):
     """
     GET a URL and return the decoded JSON. Retries on timeouts, connection errors
