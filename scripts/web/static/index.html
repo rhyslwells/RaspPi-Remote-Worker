@@ -112,6 +112,8 @@ pre {
 .legend { font-size: .8rem; color: var(--mut); display: flex; gap: 14px; margin-top: 4px; }
 .legend i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
 .legend .s0 { background: var(--btn); } .legend .s1 { background: var(--run); }
+.tabs { margin-top: 10px; display: flex; }
+.tabs button { flex: 1; min-height: 44px; font-size: .95rem; }
 [hidden] { display: none !important; }
 </style>
 </head>
@@ -120,6 +122,10 @@ pre {
   <div class="top">
     <h1>Raspberry Pi Remote Worker</h1>
     <span id="conn" class="conn">connecting</span>
+  </div>
+  <div id="tabs" class="seg tabs">
+    <button type="button" class="ghost" data-tab="scripts" onclick="setTab('scripts')">Scripts</button>
+    <button type="button" class="ghost" data-tab="tools" onclick="setTab('tools')">Pi tools</button>
   </div>
 </header>
 
@@ -474,7 +480,31 @@ async function refreshHealth() {
 }
 
 // --- history and refresh loop --------------------------------------------------
+// Two views: the scripts that do real work, and the Pi's own housekeeping tools.
+// Display order is the order of this list; scripts not listed go last under "Scripts".
+const TOOLS = ["test_connection", "git_pull_update", "restart_pi", "db_report"];
+const MAIN = ["prime_hunter", "pulse_monitor"];
+const ORDER = [...TOOLS, ...MAIN];
+let tab = "scripts";
+let historyRows = [];
+function orderOf(name) { const i = ORDER.indexOf(name); return i < 0 ? ORDER.length : i; }
+function inTab(name, t) { return TOOLS.includes(name) === (t === "tools"); }
+
+function applyTab() {
+  for (const [name, card] of Object.entries(cards)) card.el.hidden = !inTab(name, tab);
+  document.getElementById("health").hidden = tab !== "tools";
+  for (const b of document.querySelectorAll("#tabs button")) b.classList.toggle("on", b.dataset.tab === tab);
+  renderHistory(historyRows);
+}
+function setTab(t) {
+  tab = t;
+  try { localStorage.setItem("tab", t); } catch (e) {}
+  applyTab();
+}
+try { tab = localStorage.getItem("tab") === "tools" ? "tools" : "scripts"; } catch (e) {}
+
 function renderHistory(rows) {
+  rows = rows.filter(r => inTab(r.script, tab)).slice(0, 15);
   const box = document.getElementById("history");
   if (!rows.length) { box.replaceChildren(h("span", { class: "mut" }, "No runs yet")); return; }
   box.replaceChildren(...rows.map(r => {
@@ -497,16 +527,19 @@ async function refresh() {
     const data = await call("/scripts");
     serverNow = data.server_time;
     const list = document.getElementById("scripts");
-    for (const info of data.scripts) {
+    const sorted = [...data.scripts].sort((a, b) => orderOf(a.name) - orderOf(b.name));
+    for (const info of sorted) {
       if (!cards[info.name]) {
         cards[info.name] = buildCard(info);
-        list.append(cards[info.name].el);
         // Opening the page while a script is running: show its output straight away.
         if (info.state === "running" && info.run_id) openLog(cards[info.name], info.run_id);
       }
+      list.append(cards[info.name].el);  // appending again keeps the fixed order
       updateCard(cards[info.name], info);
     }
-    renderHistory(await call("/runs?limit=15"));
+    applyTab();
+    historyRows = await call("/runs?limit=60");
+    renderHistory(historyRows);
     conn.textContent = "connected";
     conn.className = "conn";
     return data.scripts.some(s => s.state === "running");
