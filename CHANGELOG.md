@@ -4,14 +4,17 @@ Version lives in `pyproject.toml` (`version = "..."`). Newest first. Bump rules 
 
 ## 0.9.0 - 2026-11-15
 
-- Pi Control web app (`scripts/web/`): run, stop and watch the task scripts from a browser, without the Sheet. One card per script with its parameters as form fields, a status badge, the last result, live output, and a history of recent runs. Plain HTML/CSS/JS page and a small FastAPI JSON API; no front-end framework. Design and status: [docs/pi-control.md](docs/pi-control.md).
+- Web UI (`scripts/web/`): run, stop and watch the task scripts from a browser, without the Sheet. One card per script: a status badge, its parameters in a collapsible section (the collapsed line shows the current values), Run and Stop, the last result, and that script's own live output inside the card. Recent runs are listed at the bottom; tapping one opens its output in the script's card. Plain HTML/CSS/JS page and a small FastAPI JSON API; no front-end framework. Design and status: [docs/web-ui.md](docs/pi-control.md).
 - Scripts are found by reading the files (nothing is imported): any `scripts/*.py` with `main` except `runner` and `run_script`. Each runs through `run_script.py` as its own process, so Stop ends the whole process tree. One run per script at a time (lock file plus database), a 30 minute timeout (override with `TIMEOUT_S`), the last 20 runs and logs kept per script, and `CONFIRM` scripts need confirmation (enforced by the server, not just the page).
 - State is in `data/pi_control/state.db` (saved parameter values, history) and logs in `logs/`. The per-script `runs` tables are unchanged, so Sheet runs and web runs show in one history. A run still going when Pi Control restarts is picked up again.
 - Each finished web run is also appended to the Sheet Log tab, best effort (never affects the run). Not verified against the live Sheet.
-- `python debug_control.py` runs the app on localhost with hot reload and seven demo scripts (success, failure, crash, slow with live output, endless loop, every parameter type, confirm), in separate `data/demo` and `logs/demo` folders. `--real` runs the real scripts instead.
+- `python debug_control.py` runs the app on localhost with hot reload, using the real scripts and the real `data/` folder (there is no demo mode). Nothing is written to the Sheet unless `--sheet-log` is given.
+- Pi health card at the top of the page: live CPU temperature, load, memory, disk, uptime and power status, a "sampling" badge for the background timer, and a graph of the samples Pulse Monitor has stored (1h, 6h, 24h, 7d; CPU temp, load, or memory and disk). Reads `data/pulse_monitor.db`; no Sheet needed. New `scripts/web/health.py` and `GET /api/health`.
+- Every script explains itself on its card: a `DESCRIPTION` (what it is for and what it changes) and a `help` sentence on each parameter. Both must be literals, like `PARAMS`.
+- `pulse_monitor` skips the System Health tab when started from the web UI with `PI_CONTROL_SHEET_LOG=0` (what `debug_control.py` sets), so a laptop sample cannot land in the Pi's chart.
 - Safety: changing requests need an `X-Pi-Control` header (stops other web pages firing runs), only discovered scripts can run, parameters are validated on the server and passed as JSON, no shell. Binds to 127.0.0.1 unless `PI_CONTROL_HOST` is set. Not yet installed as a service on the Pi, and Tailscale is not set up there, so nothing is reachable from outside the laptop.
 - New dependencies: `fastapi` and `uvicorn`. The Pi needs `uv sync` (`git_pull_update` does it). Nothing to restart: the web app is not a service yet and `runner.py` is unchanged.
-- `db_report.py`'s `PARAMS` uses literal values so the app can read it without running the file; `run_script.py` honours `PI_CONTROL_SCRIPTS_DIR` and `PI_CONTROL_DATA` (used by the debug launcher only).
+- `db_report.py`'s `PARAMS` uses literal values so the app can read it without running the file; `run_script.py` honours `PI_CONTROL_DATA` (optional, to keep databases elsewhere).
 
 ## 0.8.1 - 2026-11-15
 

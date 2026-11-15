@@ -26,12 +26,21 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from utils.control_panel import ControlPanel
 
-# Parameters shown as form fields in Pi Control (see utils/params.py).
+# Parameters shown as form fields in the web UI (see utils/params.py).
+DESCRIPTION = (
+    "Restarts the Remote Worker runner service, or reboots the whole Pi. The restart is "
+    "scheduled a moment after this script finishes, so its result is recorded first. A "
+    "reboot takes the Pi offline for about a minute and ends anything that is running, "
+    "including this web page until the Pi is back. Needs passwordless sudo."
+)
 PARAMS = [
     {"name": "mode", "label": "What to restart", "type": "choice",
-     "options": ["service", "reboot"], "default": "service"},
+     "options": ["service", "reboot"], "default": "service",
+     "help": "service: restart the runner service in about 15 seconds. reboot: reboot "
+             "the Pi in about a minute (cancel within that minute over SSH with "
+             "sudo shutdown -c)."},
 ]
-# Pi Control asks "Are you sure?" before running this script.
+# The web UI asks "Are you sure?" before running this script.
 CONFIRM = "This restarts the runner service or reboots the Pi."
 
 SERVICE_NAME = "remote-worker.service"
@@ -100,7 +109,7 @@ def main(params=None):
     Main entry point for Restart Pi.
 
     Args:
-        params: dict with "mode" (from Pi Control / run_script.py). When None the mode
+        params: dict with "mode" (from the web UI / run_script.py). When None the mode
             is read from the Config sheet.
 
     Returns:

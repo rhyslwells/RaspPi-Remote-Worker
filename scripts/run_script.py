@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Run one task script as a standalone process (used by Pi Control).
+Run one task script as a standalone process (used by the web UI).
 
     python scripts/run_script.py prime_hunter --params '{"start": 1, "end": 50}'
 
@@ -32,9 +32,8 @@ from utils import script_db  # noqa: E402
 from utils.params import coerce_params  # noqa: E402
 from utils.script_db import record_run, script_key  # noqa: E402
 
-# Set by Pi Control's local debug launcher (debug_control.py) to run demo scripts and
-# keep their databases apart from the real ones. Unset on the Pi.
-TASK_DIR = Path(os.environ.get("PI_CONTROL_SCRIPTS_DIR") or SCRIPTS_DIR)
+TASK_DIR = SCRIPTS_DIR
+# Optional: keep the databases somewhere else (the web UI sets this when it was told to).
 if os.environ.get("PI_CONTROL_DATA"):
     script_db.DATA_DIR = Path(os.environ["PI_CONTROL_DATA"])
 

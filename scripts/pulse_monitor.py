@@ -45,15 +45,28 @@ from utils.control_panel import ControlPanel, ScriptStatus
 from utils.script_db import connect
 
 SCRIPT_NAME = "pulse_monitor.py"
-# Parameters shown as form fields in Pi Control (see utils/params.py). A blank
+# Parameters shown as form fields in the web UI (see utils/params.py). A blank
 # interval takes one sample now; N starts sampling every N minutes; 0 stops it.
+DESCRIPTION = (
+    "Takes a health snapshot of the Pi: CPU temperature, load, memory, disk, uptime and "
+    "the power/throttle flags. Each sample is stored on the Pi (this is what the Pi "
+    "health chart on this page draws) and added to the System Health tab of the Sheet. "
+    "Leave Interval blank for one sample now, or give a number of minutes to keep "
+    "sampling in the background. Background sampling survives a runner restart but not "
+    "a reboot, so start it again afterwards. A reading over a limit, or the Pi being "
+    "under-voltage or throttled right now, is reported as a Health warning (a failed run)."
+)
 PARAMS = [
     {"name": "interval", "label": "Interval in minutes (blank = one sample, 0 = stop)",
-     "type": "int", "min": 0, "max": 1440},
+     "type": "int", "min": 0, "max": 1440,
+     "help": "Blank: take one sample now. 5: sample every 5 minutes in the background "
+             "(replaces any earlier schedule). 0: stop the background sampling. Up to 1440."},
     {"name": "max_temp", "label": "Max CPU temperature (C)", "type": "float",
-     "default": 75, "min": 0, "max": 120},
+     "default": 75, "min": 0, "max": 120,
+     "help": "Warn when the CPU is hotter than this. Fixed when a schedule starts."},
     {"name": "min_free", "label": "Min free disk (%)", "type": "float",
-     "default": 10, "min": 0, "max": 100},
+     "default": 10, "min": 0, "max": 100,
+     "help": "Warn when free disk space falls below this percentage. Fixed when a schedule starts."},
 ]
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HEALTH_SHEET_NAME = "System Health"
@@ -364,10 +377,10 @@ def _parse_threshold(params: list, index: int, default: float) -> float:
 
 def main(params=None):
     """
-    Main entry point for Pulse Monitor when run by the runner or Pi Control.
+    Main entry point for Pulse Monitor when run by the runner or the web UI.
 
     Args:
-        params: dict with "interval", "max_temp" and "min_free" (from Pi Control /
+        params: dict with "interval", "max_temp" and "min_free" (from the web UI /
             run_script.py). When None the values are read from the Config sheet.
 
     Returns:
@@ -394,10 +407,12 @@ def main(params=None):
         else:
             # The Google Sheet is only needed for the System Health tab. If it is not
             # reachable (no credentials, offline) the sample is still taken and stored.
-            try:
-                panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
-            except Exception:
-                panel = None
+            panel = None
+            if os.environ.get("PI_CONTROL_SHEET_LOG") != "0":  # "0" = never touch the Sheet
+                try:
+                    panel = ControlPanel(spreadsheet_name="RaspPI-Remote-Worker")
+                except Exception:
+                    panel = None
             minutes = params.get("interval")
             max_temp = params.get("max_temp")
             min_free = params.get("min_free")

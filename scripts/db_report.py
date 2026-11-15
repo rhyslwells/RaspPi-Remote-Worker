@@ -25,12 +25,21 @@ from utils.script_db import connect, db_path, get_runs, list_databases
 DEFAULT_LIMIT = 20
 MAX_LIMIT = 200
 
-# Parameters shown as form fields in Pi Control (see utils/params.py).
+DESCRIPTION = (
+    "Shows what is stored in the per-script databases in the data folder. Leave Script "
+    "name blank to list every database with how many runs it holds and when it last "
+    "ran. Give a script name to see its most recent runs (the parameters used, the "
+    "result and the message) and any extra tables that script keeps. Read only: it "
+    "changes nothing."
+)
+# Parameters shown as form fields in the web UI (see utils/params.py).
 PARAMS = [
-    {"name": "script", "label": "Script name (blank = list all)", "type": "str"},
-    # Literals, not the constants above: Pi Control reads PARAMS without running the file.
+    {"name": "script", "label": "Script name (blank = list all)", "type": "str",
+     "help": "For example prime_hunter or pulse_monitor. Blank lists every database."},
+    # Literals, not the constants above: the web UI reads PARAMS without running the file.
     {"name": "limit", "label": "Recent runs to show", "type": "int",
-     "default": 20, "min": 1, "max": 200},
+     "default": 20, "min": 1, "max": 200,
+     "help": "How many of the newest runs to list, 1 to 200. Only used with a script name."},
 ]
 CELL_CHARS = 200  # per-field truncation so the report stays readable
 MAX_DETAILS = 40000  # the sheet cell limit is 50,000 characters
@@ -109,10 +118,10 @@ def report(script: str = "", limit: int = DEFAULT_LIMIT) -> tuple:
 
 def main(params=None):
     """
-    Main entry point when run by the runner or Pi Control.
+    Main entry point when run by the runner or the web UI.
 
     Args:
-        params: dict with "script" and "limit" (from Pi Control / run_script.py). When
+        params: dict with "script" and "limit" (from the web UI / run_script.py). When
             None the values are read from the Config sheet.
 
     Returns:

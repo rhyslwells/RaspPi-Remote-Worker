@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0f1216">
-<title>Pi Control</title>
+<title>Raspberry Pi Remote Worker</title>
 <style>
 :root {
   --bg: #f6f7f9; --card: #ffffff; --fg: #14181f; --mut: #6b7280; --line: #e5e7eb;
@@ -24,10 +24,11 @@ body {
   font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
   padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
 }
-header { display: flex; align-items: baseline; justify-content: space-between; margin: 4px 0 12px; }
-h1 { font-size: 1.25rem; margin: 0; }
+header { margin: 4px 0 14px; }
+header .top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+h1 { font-size: 1.15rem; margin: 0; }
 h2 { font-size: .9rem; color: var(--mut); margin: 22px 0 8px; font-weight: 600; letter-spacing: .02em; }
-.conn { font-size: .8rem; color: var(--mut); }
+.conn { font-size: .8rem; color: var(--mut); white-space: nowrap; }
 .conn.off { color: var(--bad); }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -35,7 +36,19 @@ h2 { font-size: .9rem; color: var(--mut); margin: 22px 0 8px; font-weight: 600; 
 .desc, .meta { font-size: .84rem; color: var(--mut); margin-top: 4px; overflow-wrap: anywhere; }
 .badge { font-size: .78rem; padding: 2px 9px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
 .ok { color: var(--ok); } .bad { color: var(--bad); } .run { color: var(--run); } .mut { color: var(--mut); }
-.fields { display: grid; gap: 10px; margin-top: 12px; }
+
+/* parameters: a collapsible section inside each card */
+details.params { margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; }
+details.params summary {
+  list-style: none; cursor: pointer; padding: 10px 12px; min-height: 44px; display: flex;
+  align-items: center; gap: 8px; font-size: .92rem;
+}
+details.params summary::-webkit-details-marker { display: none; }
+details.params summary::before { content: "\25B8"; color: var(--mut); transition: transform .15s; }
+details.params[open] summary::before { transform: rotate(90deg); }
+.psum { color: var(--mut); font-size: .84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+details.params[open] .psum { display: none; }
+.fields { display: grid; gap: 12px; padding: 4px 12px 12px; }
 .field label { display: block; font-size: .82rem; color: var(--mut); margin-bottom: 4px; }
 .field.check { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
 .field.check label { margin: 0; font-size: .95rem; color: var(--fg); }
@@ -43,7 +56,20 @@ input[type=text], input[type=number], input[type=date], select {
   width: 100%; min-height: 44px; font-size: 1rem; padding: 8px 10px; border-radius: 10px;
   border: 1px solid var(--line); background: var(--bg); color: var(--fg);
 }
-input[type=checkbox] { width: 26px; height: 26px; accent-color: var(--btn); }
+/* on/off switch */
+.switch { display: inline-flex; align-items: center; gap: 8px; color: var(--mut); font-size: .85rem; }
+.switch input {
+  appearance: none; -webkit-appearance: none; width: 46px; height: 28px; border-radius: 99px;
+  background: var(--line); position: relative; cursor: pointer; transition: background .15s; margin: 0;
+}
+.switch input::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; transition: transform .15s;
+}
+.switch input:checked { background: var(--btn); }
+.switch input:checked::after { transform: translateX(18px); }
+.switch input:disabled { opacity: .5; }
+
 .actions { margin-top: 12px; }
 button {
   min-height: 44px; padding: 10px 18px; font-size: 1rem; border: 0; border-radius: 10px;
@@ -52,34 +78,54 @@ button {
 button.stop { background: var(--stop); }
 button.ghost { background: transparent; color: var(--btn); border: 1px solid var(--line); }
 button:disabled { opacity: .45; cursor: default; }
+
+/* output, inside the card */
+.log { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+.log .row { font-size: .85rem; }
+.log button { min-height: 36px; padding: 4px 12px; font-size: .9rem; }
 pre {
   background: var(--code-bg); color: var(--code-fg); padding: 10px; border-radius: 10px; margin: 8px 0 0;
-  overflow: auto; max-height: 55vh; font-size: .78rem; white-space: pre-wrap; overflow-wrap: anywhere;
+  overflow: auto; max-height: 45vh; font-size: .78rem; white-space: pre-wrap; overflow-wrap: anywhere;
 }
 .hist { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); font-size: .9rem; cursor: pointer; }
 .hist:first-child { border-top: 0; }
 .error { background: var(--bad); color: #fff; padding: 10px 12px; border-radius: 10px; margin-bottom: 10px; font-size: .9rem; }
 .error ul { margin: 6px 0 0; padding-left: 18px; }
+.help { font-size: .78rem; color: var(--mut); margin-top: 4px; }
+.desc p { margin: 0 0 6px; }
+.desc p:last-child { margin-bottom: 0; }
+
+/* Pi health card */
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.tile { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.tile .k { font-size: .74rem; color: var(--mut); }
+.tile .v { font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
+.warnings { margin: 10px 0 0; padding: 8px 12px 8px 28px; border-radius: 10px; color: var(--bad); border: 1px solid var(--bad); font-size: .88rem; }
+.seg { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.seg button { min-height: 34px; padding: 4px 12px; font-size: .85rem; background: transparent; color: var(--mut); border: 1px solid var(--line); }
+.seg button.on { color: var(--btn-fg); background: var(--btn); border-color: var(--btn); }
+.chart { width: 100%; height: auto; display: block; margin-top: 8px; }
+.chart text { fill: var(--mut); font-size: 11px; font-family: inherit; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .s0 { stroke: var(--btn); } .chart .s1 { stroke: var(--run); }
+.chart polyline { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.legend { font-size: .8rem; color: var(--mut); display: flex; gap: 14px; margin-top: 4px; }
+.legend i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.legend .s0 { background: var(--btn); } .legend .s1 { background: var(--run); }
 [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Pi Control</h1>
-  <span id="conn" class="conn">connecting</span>
+  <div class="top">
+    <h1>Raspberry Pi Remote Worker</h1>
+    <span id="conn" class="conn">connecting</span>
+  </div>
 </header>
 
 <div id="error" class="error" hidden></div>
+<section id="health"></section>
 <section id="scripts"></section>
-
-<section id="logbox" class="card" hidden>
-  <div class="row">
-    <span class="name" id="logtitle"></span>
-    <span id="logstatus" class="badge mut"></span>
-    <button class="ghost" id="logclose">Close</button>
-  </div>
-  <pre id="log"></pre>
-</section>
 
 <h2>Recent runs</h2>
 <div class="card" id="history"><span class="mut">No runs yet</span></div>
@@ -123,6 +169,7 @@ function showError(e) {
   box.replaceChildren(String(e.message || e));
   if (e.errors && e.errors.length) box.append(h("ul", {}, e.errors.map(m => h("li", {}, m))));
   box.hidden = false;
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
   clearTimeout(showError.t);
   showError.t = setTimeout(() => { box.hidden = true; }, 9000);
 }
@@ -151,17 +198,22 @@ function setBadge(el, state) {
 }
 
 // --- script cards ------------------------------------------------------------
-const cards = {};   // name -> {el, fields, badge, meta, runBtn, stopBtn, logBtn, info}
+// One card per script: header, parameters (collapsible), buttons, last result and
+// that script's own output.
+const cards = {};   // name -> card object
 let serverNow = "";
 
 function buildField(spec) {
   const id = "f-" + Math.random().toString(36).slice(2);
   const val = spec.value;
   const label = h("label", { for: id }, spec.label || spec.name);
+  const help = spec.help ? h("div", { class: "help" }, spec.help) : null;
   let input;
   if (spec.type === "bool") {
     input = h("input", { type: "checkbox", id, checked: val === true });
-    return { wrap: h("div", { class: "field check" }, label, input), input, spec };
+    const state = h("span", {}, input.checked ? "On" : "Off");
+    input.addEventListener("change", () => { state.textContent = input.checked ? "On" : "Off"; });
+    return { wrap: h("div", { class: "field check" }, h("div", {}, label, help), h("span", { class: "switch" }, state, input)), input, spec };
   }
   if (spec.type === "choice") {
     input = h("select", { id }, (spec.options || []).map(o => h("option", { value: o }, o)));
@@ -177,7 +229,7 @@ function buildField(spec) {
   } else {
     input = h("input", { type: "text", id, value: val == null ? "" : String(val), autocomplete: "off" });
   }
-  return { wrap: h("div", { class: "field" }, label, input), input, spec };
+  return { wrap: h("div", { class: "field" }, label, input, help), input, spec };
 }
 
 function readParams(card) {
@@ -189,20 +241,54 @@ function readParams(card) {
   return out;
 }
 
+// "start 1, end 50": what the collapsed Parameters line shows
+function summarise(card) {
+  const parts = [];
+  for (const f of card.fields) {
+    const name = f.spec.name;
+    if (f.spec.type === "bool") parts.push(name + " " + (f.input.checked ? "on" : "off"));
+    else if (f.input.value.trim() !== "") parts.push(name + " " + f.input.value.trim());
+  }
+  return parts.join(", ") || "none set";
+}
+
 function buildCard(info) {
-  const card = { info, fields: [] };
+  const card = { info, fields: [], logRun: null };
   card.badge = h("span", { class: "badge mut" });
   card.meta = h("div", { class: "meta" });
   card.runBtn = h("button", { onclick: () => runScript(card) }, "Run");
   card.stopBtn = h("button", { class: "stop", onclick: () => stopScript(card), hidden: true }, "Stop");
-  card.logBtn = h("button", { class: "ghost", onclick: () => card.info.run_id && showLog(card.info.run_id, card.info.label), hidden: true }, "Output");
+  card.outBtn = h("button", { class: "ghost", onclick: () => toggleOutput(card), hidden: true }, "Output");
   card.fields = info.params.map(buildField);
+
+  card.logTitle = h("span", { class: "name" });
+  card.logBadge = h("span", { class: "badge mut" });
+  card.pre = h("pre", {});
+  card.logBox = h("div", { class: "log", hidden: true },
+    h("div", { class: "row" }, card.logTitle, card.logBadge,
+      h("button", { class: "ghost", onclick: () => closeLog(card) }, "Close")),
+    card.pre);
+
+  let params = null;
+  if (card.fields.length) {
+    card.psum = h("span", { class: "psum" });
+    // Open straight away when a required field has nothing in it yet.
+    const needsInput = card.fields.some(f => f.spec.required && f.spec.type !== "bool" && !f.input.value.trim());
+    params = h("details", { class: "params", open: needsInput },
+      h("summary", {}, "Parameters", card.psum),
+      h("div", { class: "fields" }, card.fields.map(f => f.wrap)));
+    params.addEventListener("input", () => { card.psum.textContent = summarise(card); });
+    params.addEventListener("change", () => { card.psum.textContent = summarise(card); });
+    card.psum.textContent = summarise(card);
+  }
+
   card.el = h("div", { class: "card" },
     h("div", { class: "row" }, h("span", { class: "name" }, info.label), card.badge),
-    info.description ? h("div", { class: "desc" }, info.description) : null,
-    card.fields.length ? h("div", { class: "fields" }, card.fields.map(f => f.wrap)) : null,
-    h("div", { class: "row actions" }, card.runBtn, card.stopBtn, card.logBtn),
-    card.meta);
+    info.description ? h("div", { class: "desc" }, info.description.split(/\n\s*\n/).map(p => h("p", {}, p))) : null,
+    params,
+    h("div", { class: "row actions" }, card.runBtn, card.stopBtn, card.outBtn),
+    card.meta,
+    card.logBox);
   return card;
 }
 
@@ -212,7 +298,8 @@ function updateCard(card, info) {
   setBadge(card.badge, info.state);
   card.runBtn.disabled = running;
   card.stopBtn.hidden = !running;
-  card.logBtn.hidden = !info.run_id;
+  card.outBtn.hidden = !info.run_id;
+  card.outBtn.textContent = card.logRun != null ? "Hide output" : "Output";
   for (const f of card.fields) f.input.disabled = running;
   if (info.last) {
     card.meta.textContent = "Last: " + (info.last.success ? "ok" : "failed") + ", " +
@@ -231,7 +318,7 @@ async function runScript(card) {
       method: "POST",
       body: JSON.stringify({ params: readParams(card), confirm: !!info.confirm }),
     });
-    showLog(run.id, info.label);
+    openLog(card, run.id);
   } catch (e) {
     showError(e);
   }
@@ -246,36 +333,145 @@ async function stopScript(card) {
   refresh();
 }
 
-// --- log view ----------------------------------------------------------------
-let openRun = null;
-
-function showLog(id, title) {
-  openRun = id;
-  document.getElementById("logtitle").textContent = title + " (run " + id + ")";
-  document.getElementById("logbox").hidden = false;
-  document.getElementById("log").textContent = "";
-  loadLog();
-  document.getElementById("logbox").scrollIntoView({ behavior: "smooth", block: "nearest" });
+// --- output, inside each card -----------------------------------------------------
+function openLog(card, runId) {
+  card.logRun = runId;
+  card.logTitle.textContent = "Output, run " + runId;
+  card.pre.textContent = "";
+  card.logBox.hidden = false;
+  card.outBtn.textContent = "Hide output";
+  loadLog(card);
 }
 
-async function loadLog() {
-  if (openRun == null) return;
-  const id = openRun;
+function closeLog(card) {
+  card.logRun = null;
+  card.logBox.hidden = true;
+  card.outBtn.textContent = "Output";
+}
+
+function toggleOutput(card) {
+  if (card.logRun != null) closeLog(card);
+  else if (card.info.run_id) openLog(card, card.info.run_id);
+}
+
+async function loadLog(card) {
+  const id = card.logRun;
+  if (id == null) return;
   try {
     const r = await call("/log/" + id);
-    if (id !== openRun) return;
-    const pre = document.getElementById("log");
-    const atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 24;
-    pre.textContent = (r.truncated ? "... (earlier output not shown)\n" : "") + (r.text || "(no output yet)");
-    if (atEnd) pre.scrollTop = pre.scrollHeight;
-    setBadge(document.getElementById("logstatus"), r.status);
+    if (id !== card.logRun) return;
+    const atEnd = card.pre.scrollTop + card.pre.clientHeight >= card.pre.scrollHeight - 24;
+    card.pre.textContent = (r.truncated ? "... (earlier output not shown)\n" : "") + (r.text || "(no output yet)");
+    if (atEnd) card.pre.scrollTop = card.pre.scrollHeight;
+    setBadge(card.logBadge, r.status);
   } catch (e) { /* the next poll will retry */ }
 }
 
-document.getElementById("logclose").addEventListener("click", () => {
-  openRun = null;
-  document.getElementById("logbox").hidden = true;
-});
+// --- Pi health card -----------------------------------------------------------------
+let healthHours = 24;
+let healthMetric = "temp";
+let healthData = null;
+const RANGE_LABELS = [[1, "1h"], [6, "6h"], [24, "24h"], [168, "7d"]];
+const METRICS = {
+  temp: { label: "CPU temp", series: [{ i: 1, name: "CPU temperature (C)" }], fixed: null },
+  load: { label: "Load", series: [{ i: 2, name: "Load (1 min)" }], fixed: null },
+  memdisk: { label: "Memory and disk", series: [{ i: 3, name: "Memory used %" }, { i: 4, name: "Disk used %" }], fixed: [0, 100] },
+};
+const SVGNS = "http://www.w3.org/2000/svg";
+function svg(tag, attrs, text) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function fmt(v, unit) { return v == null ? "n/a" : v + (unit || ""); }
+
+function drawChart(data, metric) {
+  const W = 600, H = 220, L = 40, R = 10, T = 10, B = 26;
+  const pts = data.points;
+  const def = METRICS[metric];
+  const t = r => parseTs(r[0]).getTime();
+  const wrap = h("div", {});
+  const vals = [];
+  for (const s of def.series) for (const r of pts) if (r[s.i] != null) vals.push(r[s.i]);
+  if (pts.length < 2 || !vals.length) {
+    let why;
+    if (pts.length >= 2) why = "This reading is not available on this machine.";
+    else if (data.schedule === "active") why = "Waiting for samples to arrive.";
+    else why = "Not enough samples yet. Run Pulse Monitor with an interval to start collecting them.";
+    wrap.append(h("div", { class: "help" }, why));
+    return wrap;
+  }
+  let lo = def.fixed ? def.fixed[0] : Math.min(...vals);
+  let hi = def.fixed ? def.fixed[1] : Math.max(...vals);
+  if (!def.fixed) { const pad = (hi - lo) * 0.15 || 1; lo = Math.max(0, lo - pad); hi = hi + pad; }
+  const t0 = t(pts[0]), t1 = Math.max(t(pts[pts.length - 1]), t0 + 60000);
+  const x = ms => L + (ms - t0) / (t1 - t0) * (W - L - R);
+  const y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+
+  const el = svg("svg", { class: "chart", viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": def.label + " over time" });
+  for (let k = 0; k <= 4; k++) {
+    const v = lo + (hi - lo) * k / 4, yy = y(v);
+    el.append(svg("line", { class: "grid", x1: L, x2: W - R, y1: yy, y2: yy }));
+    el.append(svg("text", { x: L - 6, y: yy + 4, "text-anchor": "end" }, (Math.round(v * 10) / 10).toString()));
+  }
+  const dayFmt = ms => {
+    const d = new Date(ms), p = n => String(n).padStart(2, "0");
+    return (data.hours > 24 ? p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " : "") + p(d.getHours()) + ":" + p(d.getMinutes());
+  };
+  el.append(svg("text", { x: L, y: H - 6, "text-anchor": "start" }, dayFmt(t0)));
+  el.append(svg("text", { x: W - R, y: H - 6, "text-anchor": "end" }, dayFmt(t1)));
+  def.series.forEach((s, n) => {
+    let seg = [];
+    const flush = () => { if (seg.length > 1) el.append(svg("polyline", { class: "s" + n, points: seg.join(" ") })); seg = []; };
+    for (const r of pts) {
+      if (r[s.i] == null) { flush(); continue; }
+      seg.push(x(t(r)).toFixed(1) + "," + y(r[s.i]).toFixed(1));
+    }
+    flush();
+  });
+  wrap.append(el);
+  if (def.series.length > 1) {
+    wrap.append(h("div", { class: "legend" }, def.series.map((s, n) => h("span", {}, h("i", { class: "s" + n }), s.name))));
+  }
+  return wrap;
+}
+
+function renderHealth() {
+  const box = document.getElementById("health");
+  const d = healthData;
+  if (!d) return;
+  const n = d.now;
+  const sched = d.schedule === "active" ? ["sampling", "ok"] : d.schedule === "inactive" ? ["not sampling", "mut"] : null;
+  const power = n.throttled == null ? "n/a" : (n.throttled & 0x5 ? "Throttled (0x" + n.throttled.toString(16) + ")" : "OK");
+  const tile = (k, v) => h("div", { class: "tile" }, h("div", { class: "k" }, k), h("div", { class: "v" }, v));
+  const badge = sched ? h("span", { class: "badge " + sched[1] }, sched[0]) : null;
+  const last = d.last_sample ? "Last stored sample " + ago(d.last_sample, d.server_time) + "." : "No samples stored yet.";
+
+  const card = h("div", { class: "card" },
+    h("div", { class: "row" }, h("span", { class: "name" }, "Pi health"), badge),
+    h("div", { class: "desc" }, "Live reading from this machine, and the samples Pulse Monitor has stored. " + last),
+    h("div", { class: "tiles" },
+      tile("CPU temp", fmt(n.cpu_temp_c, " C")), tile("Load (1 min)", fmt(n.load_1m)),
+      tile("Memory used", fmt(n.mem_used_pct, "%")), tile("Disk used", fmt(n.disk_used_pct, "%")),
+      tile("Uptime", fmt(n.uptime_h, " h")), tile("Power", power)),
+    n.warnings.length ? h("ul", { class: "warnings" }, n.warnings.map(w => h("li", {}, w))) : null,
+    h("div", { class: "row", style: "margin-top:12px; justify-content: space-between" },
+      h("div", { class: "seg" }, Object.entries(METRICS).map(([key, m]) =>
+        h("button", { class: key === healthMetric ? "on" : "", onclick: () => { healthMetric = key; renderHealth(); } }, m.label))),
+      h("div", { class: "seg" }, RANGE_LABELS.map(([hrs, lbl]) =>
+        h("button", { class: hrs === healthHours ? "on" : "", onclick: () => { healthHours = hrs; refreshHealth(); } }, lbl)))),
+    drawChart(d, healthMetric));
+  box.replaceChildren(card);
+}
+
+async function refreshHealth() {
+  try {
+    healthData = await call("/health?hours=" + healthHours);
+    renderHealth();
+  } catch (e) { /* the card keeps its last picture; the connection badge shows problems */ }
+}
 
 // --- history and refresh loop --------------------------------------------------
 function renderHistory(rows) {
@@ -284,8 +480,13 @@ function renderHistory(rows) {
   box.replaceChildren(...rows.map(r => {
     const badge = h("span", { class: "badge" });
     setBadge(badge, r.status);
-    return h("div", { class: "hist", onclick: () => showLog(r.id, r.script) },
-      h("span", {}, r.script),
+    return h("div", { class: "hist", onclick: () => {
+        const card = cards[r.script];
+        if (!card) return;
+        openLog(card, r.id);
+        card.el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } },
+      h("span", {}, (cards[r.script] ? cards[r.script].info.label : r.script)),
       h("span", {}, badge, " ", h("span", { class: "mut" }, ago(r.started_at, serverNow))));
   }));
 }
@@ -300,6 +501,8 @@ async function refresh() {
       if (!cards[info.name]) {
         cards[info.name] = buildCard(info);
         list.append(cards[info.name].el);
+        // Opening the page while a script is running: show its output straight away.
+        if (info.state === "running" && info.run_id) openLog(cards[info.name], info.run_id);
       }
       updateCard(cards[info.name], info);
     }
@@ -316,10 +519,12 @@ async function refresh() {
 
 async function loop() {
   const anyRunning = await refresh();
-  await loadLog();
+  await Promise.all(Object.values(cards).map(loadLog));
   setTimeout(loop, anyRunning ? 1500 : 5000);
 }
 loop();
+refreshHealth();
+setInterval(refreshHealth, 30000);
 </script>
 </body>
 </html>

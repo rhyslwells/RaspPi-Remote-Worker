@@ -14,6 +14,12 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from utils.control_panel import ControlPanel, ScriptStatus
 
+DESCRIPTION = (
+    "Checks that this machine can reach and sign in to the Google Sheet, and that the "
+    "Config and Log tabs open. Use it to confirm the credentials and network are "
+    "working. It changes nothing. It has no parameters."
+)
+
 
 def test_sheet_connection():
     """

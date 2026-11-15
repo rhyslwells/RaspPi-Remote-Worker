@@ -87,7 +87,7 @@ data/                  per-script SQLite databases (generated, gitignored)
 |-----|----------|
 | [docs/setup.md](docs/setup.md) | Google Cloud, flashing and connecting to the Pi, install, service management, helper script, troubleshooting |
 | [docs/scripts.md](docs/scripts.md) | Runner behaviour, sheet layout, `ControlPanel` API, writing scripts, the included scripts |
-| [docs/pi-control.md](docs/pi-control.md) | Pi Control, the web alternative to the Sheet: purpose, design, how to use it (in progress) |
+| [docs/web-ui.md](docs/web-ui.md) | The web UI, an alternative to the Sheet: purpose, design, how to use it (in progress) |
 | [docs/faq.md](docs/faq.md) | Quick answers: does the Pi auto-update, what needs a restart, stuck rows |
 | [docs/script_ideas.md](docs/script_ideas.md) | Backlog of scripts to try (ideas, not implemented) |
 | [docs/improvements.md](docs/improvements.md) | Review findings and proposed changes (not implemented) |

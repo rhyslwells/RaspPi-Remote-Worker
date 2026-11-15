@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Pi Control: a small web UI for running and watching the task scripts.
+Raspberry Pi Remote Worker web UI: a small page for running and watching the task scripts.
 
     python scripts/web/app.py          # binds 127.0.0.1:8051 unless PI_CONTROL_HOST is set
 
 Reach it only over Tailscale (set PI_CONTROL_HOST to the Pi's Tailscale address) or on
 localhost. It must never be exposed to the internet. For local trying-out with demo
-scripts use debug_control.py at the repo root. Design: docs/pi-control.md.
+scripts use debug_control.py at the repo root. Design: docs/web-ui.md.
 """
 
 import os
@@ -21,7 +21,7 @@ from fastapi import FastAPI, Request  # noqa: E402
 from fastapi.responses import FileResponse, JSONResponse  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
-from web import engine  # noqa: E402
+from web import engine, health  # noqa: E402
 
 PAGE = Path(__file__).resolve().parent / "static" / "index.html"
 
@@ -32,7 +32,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="Pi Control", lifespan=lifespan)
+app = FastAPI(title="Raspberry Pi Remote Worker", lifespan=lifespan)
 
 
 @app.middleware("http")
@@ -65,6 +65,11 @@ def index():
 @app.get("/api/scripts")
 def scripts():
     return engine.list_scripts()
+
+
+@app.get("/api/health")
+def pi_health(hours: int = 24):
+    return health.snapshot(hours)
 
 
 @app.get("/api/runs")

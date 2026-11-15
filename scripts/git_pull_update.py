@@ -17,8 +17,15 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Pi Control asks "Are you sure?" before running this script.
+# The web UI asks "Are you sure?" before running this script.
 CONFIRM = "This pulls the latest code from git into the Pi's checkout."
+DESCRIPTION = (
+    "Pulls the latest code from git into the Pi's copy of this repository and runs "
+    "uv sync if the dependencies changed. The result says which version you moved from "
+    "and to, and whether the runner needs a restart. It never restarts anything itself, "
+    "so its own result is always recorded. Use it after pushing a new version. It has "
+    "no parameters."
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 VERSION_PATTERN = re.compile(r'^version\s*=\s*"([^"]+)"', re.MULTILINE)

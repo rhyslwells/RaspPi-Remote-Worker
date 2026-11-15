@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """
-Pi Control engine: finds task scripts, runs and stops them, keeps their state.
+Web UI engine: finds task scripts, runs and stops them, keeps their state.
 
 No web code here (see app.py). A script is started as its own process through
 scripts/run_script.py, so it can be stopped and its output read while it runs.
 
-Folders (all overridable with environment variables, which debug_control.py uses to
-keep demo runs away from real data):
-    PI_CONTROL_SCRIPTS_DIR  where task scripts are found   (default: scripts/)
+Folders (optionally overridable with environment variables):
     PI_CONTROL_DATA         per-script databases + state    (default: data/)
     PI_CONTROL_LOGS         one log file per run            (default: logs/)
     PI_CONTROL_SHEET_LOG    "1" (default) mirrors each finished run to the Sheet's
@@ -43,7 +41,7 @@ from utils.params import coerce_params  # noqa: E402
 
 log = logging.getLogger("pi_control")
 
-TASK_DIR = Path(os.environ.get("PI_CONTROL_SCRIPTS_DIR") or SCRIPTS_DIR)
+TASK_DIR = SCRIPTS_DIR  # task scripts live next to run_script.py
 if os.environ.get("PI_CONTROL_DATA"):
     # Same module object that run_script.py and the scripts use, so the whole app
     # agrees on where per-script databases live.
@@ -146,7 +144,8 @@ def discover() -> Dict[str, dict]:
     Task scripts in TASK_DIR, read with ast so nothing is imported or executed.
 
     A script is listed if it defines main() (or the legacy test_sheet_connection())
-    and is not on the exclusion list. PARAMS, CONFIRM and TIMEOUT_S must be literals.
+    and is not on the exclusion list. PARAMS, CONFIRM, TIMEOUT_S and DESCRIPTION must be
+    literals.
     """
     found: Dict[str, dict] = {}
     for path in sorted(TASK_DIR.glob("*.py")):
@@ -162,6 +161,7 @@ def discover() -> Dict[str, dict]:
         params: List[dict] = []
         confirm = None
         timeout = None
+        about = None
         for node in tree.body:
             if isinstance(node, ast.FunctionDef) and node.name in ENTRY_POINTS:
                 has_entry = True
@@ -180,10 +180,14 @@ def discover() -> Dict[str, dict]:
                     confirm = value if isinstance(value, str) else "Run this script?"
                 elif key == "TIMEOUT_S" and isinstance(value, (int, float)) and value > 0:
                     timeout = int(value)
+                elif key == "DESCRIPTION" and isinstance(value, str) and value.strip():
+                    about = value.strip()
         if not has_entry:
             continue
 
         label, description = _describe(ast.get_docstring(tree) or "", name)
+        if about:
+            description = about  # the script's own plain-language explanation, in full
         found[name] = {
             "name": name,
             "label": label,
@@ -435,7 +439,6 @@ def start_run(name: str, raw_params: Optional[dict], confirm: bool) -> dict:
             **os.environ,
             "PYTHONUNBUFFERED": "1",
             "PYTHONIOENCODING": "utf-8",
-            "PI_CONTROL_SCRIPTS_DIR": str(TASK_DIR),
         }
         if os.environ.get("PI_CONTROL_DATA"):
             env["PI_CONTROL_DATA"] = str(DATA_DIR)
@@ -501,7 +504,7 @@ def _watch(run_id: int, name: str, proc: subprocess.Popen, logf, timeout: int) -
 
 
 def _watch_orphan(run_id: int, name: str, pid: int) -> None:
-    """A run that outlived a restart of Pi Control: wait for its PID to go away."""
+    """A run that outlived a restart of the web UI: wait for its PID to go away."""
     while pid_alive(pid):
         time.sleep(2)
     _finalize(run_id, name, None, False, run_id in _stop_requested)
@@ -593,7 +596,7 @@ def mirror_to_sheet(name: str, success: bool, message: str, details: str) -> Non
         panel.log_execution(
             f"{name}.py",
             ScriptStatus.SUCCESS if success else ScriptStatus.FAILED,
-            f"[Pi Control] {message}",
+            f"[Web UI] {message}",
             (details or "")[:40000],
         )
     except Exception as e:  # noqa: BLE001 - the Sheet is a mirror, not a dependency
@@ -601,7 +604,7 @@ def mirror_to_sheet(name: str, success: bool, message: str, details: str) -> Non
 
 
 def reconcile() -> None:
-    """At startup: settle runs left 'running' by a previous Pi Control process."""
+    """At startup: settle runs left 'running' by a previous web UI process."""
     with db() as con:
         rows = con.execute("SELECT * FROM web_runs WHERE status='running'").fetchall()
     for row in rows:

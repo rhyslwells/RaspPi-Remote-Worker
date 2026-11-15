@@ -9,13 +9,13 @@ A script may declare the parameters it accepts at module level:
         {"name": "dry_run", "label": "Dry run", "type": "bool", "default": False},
     ]
 
-Pi Control builds its form from this list and ``run_script.py`` validates the values
+The web UI builds its form from this list and ``run_script.py`` validates the values
 with ``coerce_params`` before calling ``main(params)``. Values may arrive as strings
 (the Google Sheet, a form) or already typed (JSON); both are accepted.
 
 Supported types: str, int, float, bool, date (YYYY-MM-DD), choice (needs "options").
 Optional keys per field: label, default, required (default False), min, max (int and
-float), options (choice).
+float), options (choice), help (one sentence shown under the field).
 """
 
 from datetime import date

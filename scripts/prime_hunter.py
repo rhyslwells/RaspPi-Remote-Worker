@@ -17,10 +17,17 @@ sys.path.insert(0, str(Path(__file__).parent))
 from utils.control_panel import ControlPanel
 from utils.script_db import connect
 
-# Parameters shown as form fields in Pi Control (see utils/params.py).
+# Parameters shown as form fields in the web UI (see utils/params.py).
+DESCRIPTION = (
+    "Finds every prime number between two whole numbers and stores the ones it has not "
+    "seen before in its own database. A small example task that shows how parameters "
+    "work. Very large ranges take a long time, and Stop ends the search."
+)
 PARAMS = [
-    {"name": "start", "label": "Start (inclusive)", "type": "int", "required": True},
-    {"name": "end", "label": "End (inclusive)", "type": "int", "required": True},
+    {"name": "start", "label": "Start (inclusive)", "type": "int", "required": True,
+     "help": "Lowest number to check. Anything below 2 is treated as 2."},
+    {"name": "end", "label": "End (inclusive)", "type": "int", "required": True,
+     "help": "Highest number to check. Must be at least the start."},
 ]
 
 
@@ -80,7 +87,7 @@ def main(params=None):
     Main entry point for Prime Hunter.
 
     Args:
-        params: dict with "start" and "end" (from Pi Control / run_script.py). When None
+        params: dict with "start" and "end" (from the web UI / run_script.py). When None
             the values are read from the Config sheet, as the Sheet runner expects.
 
     Returns:
