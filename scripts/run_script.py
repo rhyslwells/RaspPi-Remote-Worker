@@ -19,6 +19,7 @@ import argparse
 import importlib.util
 import inspect
 import json
+import os
 import sys
 import time
 from datetime import datetime
@@ -27,8 +28,15 @@ from pathlib import Path
 SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
+from utils import script_db  # noqa: E402
 from utils.params import coerce_params  # noqa: E402
 from utils.script_db import record_run, script_key  # noqa: E402
+
+# Set by Pi Control's local debug launcher (debug_control.py) to run demo scripts and
+# keep their databases apart from the real ones. Unset on the Pi.
+TASK_DIR = Path(os.environ.get("PI_CONTROL_SCRIPTS_DIR") or SCRIPTS_DIR)
+if os.environ.get("PI_CONTROL_DATA"):
+    script_db.DATA_DIR = Path(os.environ["PI_CONTROL_DATA"])
 
 
 # Files in scripts/ that are not task scripts. Running "runner" would start the Sheet
@@ -41,9 +49,9 @@ def load_script(name: str):
     key = script_key(name)
     if key in NOT_TASK_SCRIPTS:
         raise FileNotFoundError(f"{key!r} is not a task script")
-    path = SCRIPTS_DIR / f"{key}.py"
+    path = TASK_DIR / f"{key}.py"
     if not path.is_file():
-        raise FileNotFoundError(f"No script named {key!r} in {SCRIPTS_DIR}")
+        raise FileNotFoundError(f"No script named {key!r} in {TASK_DIR}")
     spec = importlib.util.spec_from_file_location(key, path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Could not create a module spec for {key}")

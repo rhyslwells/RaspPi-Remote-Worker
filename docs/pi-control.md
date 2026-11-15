@@ -2,7 +2,7 @@
 
 Pi Control is a web page for running and watching the task scripts on the Pi, as an alternative to the Google Sheet. It is meant to be used from a phone.
 
-**Status: in progress.** Sections marked (built) exist in the repo; everything else is planned and described so the design is written down before the code. The web app itself is not built yet.
+**Status: in progress.** The web app works on a laptop (`python debug_control.py`). It is not installed on the Pi yet: that needs Tailscale on the Pi and a systemd service. Sections marked (built) exist in the repo; (planned) ones do not.
 
 ## Purpose
 
@@ -34,12 +34,15 @@ flowchart LR
     RN -->|in process| S
 ```
 
-- The web app starts each script as its own process, so it can be stopped and its output read as it is produced. (planned)
+- The web app starts each script as its own process, so it can be stopped and its output read as it is produced. (built)
 - The Sheet runner still imports and calls scripts in its own process. (unchanged)
 - Both record runs in the script's `runs` table in `data/`, so history is shared.
-- Web runs also append a row to the Sheet's Log tab. This is best effort: if the Sheet is unreachable the run and the page are unaffected. (planned)
+- Web runs also append a row to the Sheet's Log tab. This is best effort: if the Sheet is unreachable the run and the page are unaffected. (built, not yet checked against the live Sheet)
 
 ## What exists now (built)
+
+- **The web app**, in `scripts/web/`: `engine.py` (finding, running, stopping, state), `app.py` (a small JSON API) and `static/index.html` (the page). Run it with `python scripts/web/app.py`, or locally with `python debug_control.py`.
+- **State:** saved parameter values and the history of web runs are in `data/pi_control/state.db`; one log file per run is in `logs/`. A lock file in `data/pi_control/locks/` holds the PID of a running script.
 
 - `scripts/run_script.py` runs one script as its own process:
   ```
@@ -69,15 +72,16 @@ def main(params=None):
 
 Types: `str`, `int`, `float`, `bool`, `date` (YYYY-MM-DD), `choice` (with `options`). Optional keys: `label`, `default`, `required`, `min`, `max`. Unknown names, wrong types and out-of-range values are rejected before the script runs. `main()` with no argument still works for scripts that have not been converted. The return value is unchanged.
 
-## Planned behaviour
+## Behaviour (built)
 
-- **Script list:** every script in `scripts/` that has a `main`, except non-task files (`runner`, `run_script`, `utils`, grid internals). The same set as the Config sheet.
-- **Run:** one tap, with an "Are you sure?" box for scripts that set `CONFIRM`. Parameter values are remembered per script.
-- **Stop:** ends the script and its child processes, and records the run as failed ("Stopped by user").
-- **Output:** live while running, kept per run. The last 20 per script are retained.
-- **No overlap:** a script cannot be started twice from the web app. A Sheet run is not yet checked against this.
-- **Timeout:** 30 minutes by default, per-script override.
+- **Script list:** every `scripts/*.py` that defines `main` (or the legacy `test_sheet_connection`), except `runner` and `run_script`. The files are read, not imported, so `PARAMS`, `CONFIRM` and `TIMEOUT_S` must be plain literal values. Today that is the same set as the Config sheet: `db_report`, `git_pull_update`, `prime_hunter`, `pulse_monitor`, `restart_pi`, `test_connection`.
+- **Run:** one tap. Scripts that set `CONFIRM` show an "Are you sure?" box, and the server refuses to run them without confirmation. The values used are remembered per script.
+- **Stop:** ends the script and its child processes and records the run as failed ("Stopped by user"). The state shows as "stopped".
+- **Output:** live while running (the page polls), kept per run. The last 20 runs and logs per script are kept.
+- **No overlap:** a script cannot be started twice from the web app. A Sheet run is not checked against this (planned).
+- **Timeout:** 30 minutes by default; a script can set `TIMEOUT_S`. The demo loop script sets it to 10 minutes.
 - **Looping scripts** run until stopped.
+- **Restart safety:** if Pi Control restarts while a script runs, the script keeps going and is picked up again on startup (it can still be stopped).
 
 ## Access and safety
 
@@ -95,9 +99,15 @@ Types: `str`, `int`, `float`, `bool`, `date` (YYYY-MM-DD), `choice` (with `optio
 
 The exact commands go in [setup.md](setup.md) when the service exists.
 
-## Trying it on a laptop (planned)
+## Trying it on a laptop (built)
 
-`python debug_control.py` will start the app on `http://127.0.0.1:8051` with fake demo scripts and its own throwaway data, so nothing touches real history and the Sheet is never contacted. `--real` runs the real scripts instead. Modelled on `debug_ui.py` for the grid dashboard.
+```
+python debug_control.py            # demo scripts, throwaway data in data/demo and logs/demo
+python debug_control.py --reset    # wipe the demo data first
+python debug_control.py --real     # the real scripts and data (they run on this machine)
+```
+
+It serves `http://127.0.0.1:8051` (localhost only) and reloads when `scripts/web/` changes, like `debug_ui.py` does for the grid dashboard. Demo mode never touches real history and never contacts the Sheet. The demo scripts in `scripts/web/demo_scripts/` cover a success, a failure, a crash, a slow script with live output, an endless loop (to try Stop), every parameter type, and a confirm box. `--real` does not write to the Sheet's Log tab unless `--sheet-log` is added.
 
 ## Not part of this
 

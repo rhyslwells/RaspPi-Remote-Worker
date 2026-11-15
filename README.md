@@ -1,6 +1,6 @@
 # RaspPi Remote Worker
 
-Version 0.8.1 ([changelog](CHANGELOG.md), [how to bump](docs/scripts.md#versioning)). The version is shown in every update message.
+Version 0.9.0 ([changelog](CHANGELOG.md), [how to bump](docs/scripts.md#versioning)). The version is shown in every update message.
 
 A Raspberry Pi task runner controlled from a Google Sheet. A systemd service on the Pi polls the sheet, runs the Python script named in any row whose status is `START`, and writes the result back. No web UI and no SSH needed to trigger a job: change a cell.
 

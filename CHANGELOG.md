@@ -2,6 +2,17 @@
 
 Version lives in `pyproject.toml` (`version = "..."`). Newest first. Bump rules are in [docs/scripts.md](docs/scripts.md#versioning).
 
+## 0.9.0 - 2026-11-15
+
+- Pi Control web app (`scripts/web/`): run, stop and watch the task scripts from a browser, without the Sheet. One card per script with its parameters as form fields, a status badge, the last result, live output, and a history of recent runs. Plain HTML/CSS/JS page and a small FastAPI JSON API; no front-end framework. Design and status: [docs/pi-control.md](docs/pi-control.md).
+- Scripts are found by reading the files (nothing is imported): any `scripts/*.py` with `main` except `runner` and `run_script`. Each runs through `run_script.py` as its own process, so Stop ends the whole process tree. One run per script at a time (lock file plus database), a 30 minute timeout (override with `TIMEOUT_S`), the last 20 runs and logs kept per script, and `CONFIRM` scripts need confirmation (enforced by the server, not just the page).
+- State is in `data/pi_control/state.db` (saved parameter values, history) and logs in `logs/`. The per-script `runs` tables are unchanged, so Sheet runs and web runs show in one history. A run still going when Pi Control restarts is picked up again.
+- Each finished web run is also appended to the Sheet Log tab, best effort (never affects the run). Not verified against the live Sheet.
+- `python debug_control.py` runs the app on localhost with hot reload and seven demo scripts (success, failure, crash, slow with live output, endless loop, every parameter type, confirm), in separate `data/demo` and `logs/demo` folders. `--real` runs the real scripts instead.
+- Safety: changing requests need an `X-Pi-Control` header (stops other web pages firing runs), only discovered scripts can run, parameters are validated on the server and passed as JSON, no shell. Binds to 127.0.0.1 unless `PI_CONTROL_HOST` is set. Not yet installed as a service on the Pi, and Tailscale is not set up there, so nothing is reachable from outside the laptop.
+- New dependencies: `fastapi` and `uvicorn`. The Pi needs `uv sync` (`git_pull_update` does it). Nothing to restart: the web app is not a service yet and `runner.py` is unchanged.
+- `db_report.py`'s `PARAMS` uses literal values so the app can read it without running the file; `run_script.py` honours `PI_CONTROL_SCRIPTS_DIR` and `PI_CONTROL_DATA` (used by the debug launcher only).
+
 ## 0.8.1 - 2026-11-15
 
 - Pi Control step 2: the remaining Sheet scripts can now take parameters without the Sheet. `db_report`, `restart_pi` and `pulse_monitor` declare `PARAMS` and accept `main(params=None)`; with `None` they read the Sheet exactly as before. `restart_pi` and `git_pull_update` set `CONFIRM`, which Pi Control will use for an "Are you sure?" step.

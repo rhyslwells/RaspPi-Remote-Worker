@@ -28,8 +28,9 @@ MAX_LIMIT = 200
 # Parameters shown as form fields in Pi Control (see utils/params.py).
 PARAMS = [
     {"name": "script", "label": "Script name (blank = list all)", "type": "str"},
+    # Literals, not the constants above: Pi Control reads PARAMS without running the file.
     {"name": "limit", "label": "Recent runs to show", "type": "int",
-     "default": DEFAULT_LIMIT, "min": 1, "max": MAX_LIMIT},
+     "default": 20, "min": 1, "max": 200},
 ]
 CELL_CHARS = 200  # per-field truncation so the report stays readable
 MAX_DETAILS = 40000  # the sheet cell limit is 50,000 characters

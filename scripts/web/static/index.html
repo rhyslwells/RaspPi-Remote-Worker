@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f1216">
+<title>Pi Control</title>
+<style>
+:root {
+  --bg: #f6f7f9; --card: #ffffff; --fg: #14181f; --mut: #6b7280; --line: #e5e7eb;
+  --ok: #15803d; --bad: #b91c1c; --run: #b45309; --btn: #1d4ed8; --btn-fg: #ffffff;
+  --stop: #b91c1c; --code-bg: #0b0d10; --code-fg: #d6dae0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1216; --card: #181c22; --fg: #e8eaed; --mut: #9aa1ac; --line: #2a2f37;
+    --ok: #4ade80; --bad: #f87171; --run: #fbbf24; --btn: #3b82f6; --stop: #ef4444;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0 auto; max-width: 680px; background: var(--bg); color: var(--fg);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+}
+header { display: flex; align-items: baseline; justify-content: space-between; margin: 4px 0 12px; }
+h1 { font-size: 1.25rem; margin: 0; }
+h2 { font-size: .9rem; color: var(--mut); margin: 22px 0 8px; font-weight: 600; letter-spacing: .02em; }
+.conn { font-size: .8rem; color: var(--mut); }
+.conn.off { color: var(--bad); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.name { font-weight: 600; flex: 1; min-width: 0; }
+.desc, .meta { font-size: .84rem; color: var(--mut); margin-top: 4px; overflow-wrap: anywhere; }
+.badge { font-size: .78rem; padding: 2px 9px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
+.ok { color: var(--ok); } .bad { color: var(--bad); } .run { color: var(--run); } .mut { color: var(--mut); }
+.fields { display: grid; gap: 10px; margin-top: 12px; }
+.field label { display: block; font-size: .82rem; color: var(--mut); margin-bottom: 4px; }
+.field.check { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.field.check label { margin: 0; font-size: .95rem; color: var(--fg); }
+input[type=text], input[type=number], input[type=date], select {
+  width: 100%; min-height: 44px; font-size: 1rem; padding: 8px 10px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--fg);
+}
+input[type=checkbox] { width: 26px; height: 26px; accent-color: var(--btn); }
+.actions { margin-top: 12px; }
+button {
+  min-height: 44px; padding: 10px 18px; font-size: 1rem; border: 0; border-radius: 10px;
+  background: var(--btn); color: var(--btn-fg); cursor: pointer;
+}
+button.stop { background: var(--stop); }
+button.ghost { background: transparent; color: var(--btn); border: 1px solid var(--line); }
+button:disabled { opacity: .45; cursor: default; }
+pre {
+  background: var(--code-bg); color: var(--code-fg); padding: 10px; border-radius: 10px; margin: 8px 0 0;
+  overflow: auto; max-height: 55vh; font-size: .78rem; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.hist { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); font-size: .9rem; cursor: pointer; }
+.hist:first-child { border-top: 0; }
+.error { background: var(--bad); color: #fff; padding: 10px 12px; border-radius: 10px; margin-bottom: 10px; font-size: .9rem; }
+.error ul { margin: 6px 0 0; padding-left: 18px; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Pi Control</h1>
+  <span id="conn" class="conn">connecting</span>
+</header>
+
+<div id="error" class="error" hidden></div>
+<section id="scripts"></section>
+
+<section id="logbox" class="card" hidden>
+  <div class="row">
+    <span class="name" id="logtitle"></span>
+    <span id="logstatus" class="badge mut"></span>
+    <button class="ghost" id="logclose">Close</button>
+  </div>
+  <pre id="log"></pre>
+</section>
+
+<h2>Recent runs</h2>
+<div class="card" id="history"><span class="mut">No runs yet</span></div>
+
+<script>
+"use strict";
+
+// --- helpers ---------------------------------------------------------------
+function h(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v === true) e.setAttribute(k, "");
+    else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) {
+    if (kid == null || kid === false) continue;
+    e.append(kid.nodeType ? kid : document.createTextNode(kid));
+  }
+  return e;
+}
+
+async function call(path, opts) {
+  const o = Object.assign({}, opts);
+  o.headers = Object.assign({ "X-Pi-Control": "1", "Content-Type": "application/json" }, o.headers);
+  const r = await fetch("/api" + path, o);
+  let data = null;
+  try { data = await r.json(); } catch (e) { /* not JSON */ }
+  if (!r.ok) {
+    const err = new Error((data && data.message) || r.statusText || "Request failed");
+    err.errors = (data && data.errors) || [];
+    err.status = r.status;
+    throw err;
+  }
+  return data;
+}
+
+function showError(e) {
+  const box = document.getElementById("error");
+  box.replaceChildren(String(e.message || e));
+  if (e.errors && e.errors.length) box.append(h("ul", {}, e.errors.map(m => h("li", {}, m))));
+  box.hidden = false;
+  clearTimeout(showError.t);
+  showError.t = setTimeout(() => { box.hidden = true; }, 9000);
+}
+
+// Times from the server are naive local strings; compare them with the server's own
+// clock so the phone's timezone does not matter.
+function parseTs(s) { return new Date(String(s).replace(" ", "T")); }
+function ago(ts, serverNow) {
+  if (!ts) return "";
+  const s = (parseTs(serverNow) - parseTs(ts)) / 1000;
+  if (!isFinite(s)) return ts;
+  if (s < 90) return Math.max(0, Math.round(s)) + "s ago";
+  if (s < 5400) return Math.round(s / 60) + "m ago";
+  if (s < 172800) return Math.round(s / 3600) + "h ago";
+  return Math.round(s / 86400) + "d ago";
+}
+
+const STATES = {
+  running: ["running", "run"], success: ["ok", "ok"], failed: ["failed", "bad"],
+  stopped: ["stopped", "mut"], timeout: ["timed out", "bad"], never: ["never run", "mut"],
+};
+function setBadge(el, state) {
+  const [text, cls] = STATES[state] || [state, "mut"];
+  el.textContent = text;
+  el.className = "badge " + cls;
+}
+
+// --- script cards ------------------------------------------------------------
+const cards = {};   // name -> {el, fields, badge, meta, runBtn, stopBtn, logBtn, info}
+let serverNow = "";
+
+function buildField(spec) {
+  const id = "f-" + Math.random().toString(36).slice(2);
+  const val = spec.value;
+  const label = h("label", { for: id }, spec.label || spec.name);
+  let input;
+  if (spec.type === "bool") {
+    input = h("input", { type: "checkbox", id, checked: val === true });
+    return { wrap: h("div", { class: "field check" }, label, input), input, spec };
+  }
+  if (spec.type === "choice") {
+    input = h("select", { id }, (spec.options || []).map(o => h("option", { value: o }, o)));
+    input.value = val == null ? "" : String(val);
+  } else if (spec.type === "int" || spec.type === "float") {
+    input = h("input", {
+      type: "number", id, inputmode: spec.type === "int" ? "numeric" : "decimal",
+      step: spec.type === "int" ? "1" : "any", min: spec.min, max: spec.max,
+      value: val == null ? "" : String(val),
+    });
+  } else if (spec.type === "date") {
+    input = h("input", { type: "date", id, value: val == null ? "" : String(val) });
+  } else {
+    input = h("input", { type: "text", id, value: val == null ? "" : String(val), autocomplete: "off" });
+  }
+  return { wrap: h("div", { class: "field" }, label, input), input, spec };
+}
+
+function readParams(card) {
+  const out = {};
+  for (const f of card.fields) {
+    if (f.spec.type === "bool") out[f.spec.name] = f.input.checked;
+    else if (f.input.value.trim() !== "") out[f.spec.name] = f.input.value;
+  }
+  return out;
+}
+
+function buildCard(info) {
+  const card = { info, fields: [] };
+  card.badge = h("span", { class: "badge mut" });
+  card.meta = h("div", { class: "meta" });
+  card.runBtn = h("button", { onclick: () => runScript(card) }, "Run");
+  card.stopBtn = h("button", { class: "stop", onclick: () => stopScript(card), hidden: true }, "Stop");
+  card.logBtn = h("button", { class: "ghost", onclick: () => card.info.run_id && showLog(card.info.run_id, card.info.label), hidden: true }, "Output");
+  card.fields = info.params.map(buildField);
+  card.el = h("div", { class: "card" },
+    h("div", { class: "row" }, h("span", { class: "name" }, info.label), card.badge),
+    info.description ? h("div", { class: "desc" }, info.description) : null,
+    card.fields.length ? h("div", { class: "fields" }, card.fields.map(f => f.wrap)) : null,
+    h("div", { class: "row actions" }, card.runBtn, card.stopBtn, card.logBtn),
+    card.meta);
+  return card;
+}
+
+function updateCard(card, info) {
+  card.info = info;
+  const running = info.state === "running";
+  setBadge(card.badge, info.state);
+  card.runBtn.disabled = running;
+  card.stopBtn.hidden = !running;
+  card.logBtn.hidden = !info.run_id;
+  for (const f of card.fields) f.input.disabled = running;
+  if (info.last) {
+    card.meta.textContent = "Last: " + (info.last.success ? "ok" : "failed") + ", " +
+      ago(info.last.started_at, serverNow) + (info.last.message ? " - " + info.last.message : "");
+  } else {
+    card.meta.textContent = "";
+  }
+}
+
+async function runScript(card) {
+  const info = card.info;
+  if (info.confirm && !window.confirm(info.label + "\n\n" + info.confirm + "\n\nRun it?")) return;
+  card.runBtn.disabled = true;
+  try {
+    const run = await call("/run/" + info.name, {
+      method: "POST",
+      body: JSON.stringify({ params: readParams(card), confirm: !!info.confirm }),
+    });
+    showLog(run.id, info.label);
+  } catch (e) {
+    showError(e);
+  }
+  refresh();
+}
+
+async function stopScript(card) {
+  card.stopBtn.disabled = true;
+  try { await call("/stop/" + card.info.name, { method: "POST", body: "{}" }); }
+  catch (e) { showError(e); }
+  card.stopBtn.disabled = false;
+  refresh();
+}
+
+// --- log view ----------------------------------------------------------------
+let openRun = null;
+
+function showLog(id, title) {
+  openRun = id;
+  document.getElementById("logtitle").textContent = title + " (run " + id + ")";
+  document.getElementById("logbox").hidden = false;
+  document.getElementById("log").textContent = "";
+  loadLog();
+  document.getElementById("logbox").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+async function loadLog() {
+  if (openRun == null) return;
+  const id = openRun;
+  try {
+    const r = await call("/log/" + id);
+    if (id !== openRun) return;
+    const pre = document.getElementById("log");
+    const atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 24;
+    pre.textContent = (r.truncated ? "... (earlier output not shown)\n" : "") + (r.text || "(no output yet)");
+    if (atEnd) pre.scrollTop = pre.scrollHeight;
+    setBadge(document.getElementById("logstatus"), r.status);
+  } catch (e) { /* the next poll will retry */ }
+}
+
+document.getElementById("logclose").addEventListener("click", () => {
+  openRun = null;
+  document.getElementById("logbox").hidden = true;
+});
+
+// --- history and refresh loop --------------------------------------------------
+function renderHistory(rows) {
+  const box = document.getElementById("history");
+  if (!rows.length) { box.replaceChildren(h("span", { class: "mut" }, "No runs yet")); return; }
+  box.replaceChildren(...rows.map(r => {
+    const badge = h("span", { class: "badge" });
+    setBadge(badge, r.status);
+    return h("div", { class: "hist", onclick: () => showLog(r.id, r.script) },
+      h("span", {}, r.script),
+      h("span", {}, badge, " ", h("span", { class: "mut" }, ago(r.started_at, serverNow))));
+  }));
+}
+
+async function refresh() {
+  const conn = document.getElementById("conn");
+  try {
+    const data = await call("/scripts");
+    serverNow = data.server_time;
+    const list = document.getElementById("scripts");
+    for (const info of data.scripts) {
+      if (!cards[info.name]) {
+        cards[info.name] = buildCard(info);
+        list.append(cards[info.name].el);
+      }
+      updateCard(cards[info.name], info);
+    }
+    renderHistory(await call("/runs?limit=15"));
+    conn.textContent = "connected";
+    conn.className = "conn";
+    return data.scripts.some(s => s.state === "running");
+  } catch (e) {
+    conn.textContent = "offline";
+    conn.className = "conn off";
+    return false;
+  }
+}
+
+async function loop() {
+  const anyRunning = await refresh();
+  await loadLog();
+  setTimeout(loop, anyRunning ? 1500 : 5000);
+}
+loop();
+</script>
+</body>
+</html>
